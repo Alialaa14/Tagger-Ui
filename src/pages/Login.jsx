@@ -1,14 +1,16 @@
 import React, { useState } from 'react'
-import PasswordInput from '../components/PasswordInput'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import PasswordInput from '../components/PasswordInput'
 import toast from '../utils/toast'
 import { refreshAuthFromCookies } from '../socket'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const [phoneNumber, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
 
   async function submit(e) {
     e.preventDefault()
@@ -19,12 +21,19 @@ export default function Login() {
         toast(res?.message || 'فشل تسجيل الدخول', 'error')
         return
       }
+
       const data = res.data
+      const role = data?.role
+      if (role) localStorage.setItem('user_role', String(role).toLowerCase())
+      else localStorage.removeItem('user_role')
+
       const token = data?.access_token || data?.token || (typeof data === 'string' ? data : null)
       if (token) {
         document.cookie = `access_token=${encodeURIComponent(token)};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`
-        try { refreshAuthFromCookies() } catch (e) { /* ignore */ }
+        try { refreshAuthFromCookies() } catch (_) { /* ignore */ }
       }
+
+      await refreshUser()
       toast(res.message || 'تم تسجيل الدخول', 'success')
       navigate('/')
     } catch (err) {

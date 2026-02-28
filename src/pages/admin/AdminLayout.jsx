@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { useAuth } from '../../context/AuthContext'
 
-export default function AdminLayout(){
+export default function AdminLayout() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const { logout } = useAuth()
+
   return (
     <div className={`admin-layout ${open ? 'is-open' : ''}`}>
       <aside className="admin-aside">
@@ -15,20 +17,19 @@ export default function AdminLayout(){
         <nav>
           <Link to="/admin/categories" onClick={() => setOpen(false)}>إدارة الأقسام</Link>
           <Link to="/admin/products" onClick={() => setOpen(false)}>إدارة المنتجات</Link>
+          <Link to="/admin/coupons" onClick={() => setOpen(false)}>إدارة الكوبونات</Link>
           <Link to="/admin/users-online" onClick={() => setOpen(false)}>المتاجر المتصلة</Link>
         </nav>
         <div className="admin-aside__footer">
           <button
             className="btn btn-ghost"
             onClick={async () => {
-              try {
-                await axios.post('http://localhost:3000/api/v1/auth/logout', {}, { withCredentials: true })
-                navigate('/login')
-              } catch (err) {
-                console.error('logout failed', err)
-              }
+              await logout()
+              navigate('/login')
             }}
-          >تسجيل خروج</button>
+          >
+            تسجيل خروج
+          </button>
         </div>
       </aside>
 

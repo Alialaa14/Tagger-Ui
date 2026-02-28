@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import toast from '../utils/toast'
 import { refreshAuthFromCookies } from '../socket'
+import { useAuth } from '../context/AuthContext'
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -16,13 +17,14 @@ export default function Signup() {
     role: 'trader',
   })
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
 
   function change(field) {
-    return e => setForm(f => ({ ...f, [field]: e.target.value }))
+    return (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
   }
 
   function setRole(role) {
-    setForm(f => ({ ...f, role }))
+    setForm((f) => ({ ...f, role }))
   }
 
   async function submit(e) {
@@ -33,12 +35,19 @@ export default function Signup() {
         toast(res?.message || 'فشل إنشاء الحساب', 'error')
         return
       }
+
       const data = res.data
+      const role = data?.role || data?.user?.role || data?.account?.role || form.role || null
+      if (role) localStorage.setItem('user_role', String(role).toLowerCase())
+      else localStorage.removeItem('user_role')
+
       const token = data?.access_token || data?.token || (typeof data === 'string' ? data : null)
       if (token) {
         document.cookie = `access_token=${encodeURIComponent(token)};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`
-        try { refreshAuthFromCookies() } catch (e) { /* ignore */ }
+        try { refreshAuthFromCookies() } catch (_) { /* ignore */ }
       }
+
+      await refreshUser()
       toast(res.message || 'تم إنشاء الحساب', 'success')
       navigate('/')
     } catch (err) {
@@ -54,11 +63,9 @@ export default function Signup() {
         <aside className="auth-hero">
           <div className="auth-hero__badge">منصة تجارة عربية</div>
           <h1>ابدأ متجرك بسهولة</h1>
-          <p>
-            أنشئ حسابك كتاجر أو عميل، وابدأ إدارة الطلبات والمنتجات في واجهة عربية مصممة للهواتف والويب.
-          </p>
+          <p>أنشئ حسابك كتاجر أو عميل وابدأ إدارة الطلبات والمنتجات في واجهة عربية.</p>
           <ul className="auth-hero__list">
-            <li>واجهة عربية كاملة واتجاه RTL صحيح</li>
+            <li>واجهة عربية كاملة</li>
             <li>لوحة تحكم بسيطة وسريعة</li>
             <li>إدارة الطلبات والمتجر من مكان واحد</li>
           </ul>
@@ -68,7 +75,7 @@ export default function Signup() {
           <header className="auth-header">
             <p className="auth-eyebrow">إنشاء حساب جديد</p>
             <h2 id="signup-title">تسجيل حسابك في دقائق</h2>
-            <p className="auth-sub">أدخل بياناتك الأساسية، واختر نوع الحساب المناسب.</p>
+            <p className="auth-sub">أدخل بياناتك الأساسية واختر نوع الحساب المناسب.</p>
           </header>
 
           <form className="auth-form" onSubmit={submit}>
