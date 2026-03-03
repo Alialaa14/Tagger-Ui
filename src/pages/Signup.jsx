@@ -5,17 +5,20 @@ import toast from '../utils/toast'
 import { refreshAuthFromCookies } from '../socket'
 import { useAuth } from '../context/AuthContext'
 
+const initialForm = {
+  username: '',
+  shopName: '',
+  phoneNumber: '',
+  city: '',
+  governorate: '',
+  address: '',
+  password: '',
+  role: 'trader',
+}
+
 export default function Signup() {
-  const [form, setForm] = useState({
-    username: '',
-    shopName: '',
-    phoneNumber: '',
-    city: '',
-    governorate: '',
-    address: '',
-    password: '',
-    role: 'trader',
-  })
+  const [form, setForm] = useState(initialForm)
+  const [imageFile, setImageFile] = useState(null)
   const navigate = useNavigate()
   const { refreshUser } = useAuth()
 
@@ -27,10 +30,35 @@ export default function Signup() {
     setForm((f) => ({ ...f, role }))
   }
 
+  function onImageChange(e) {
+    const file = e.target.files?.[0] || null
+    setImageFile(file)
+  }
+
+  function resetForm() {
+    setForm(initialForm)
+    setImageFile(null)
+  }
+
   async function submit(e) {
     e.preventDefault()
     try {
-      const { data: res } = await axios.post('http://localhost:3000/api/v1/auth/register', form, { withCredentials: true })
+      const formData = new FormData()
+      formData.set('username', form.username)
+      formData.set('shopName', form.shopName)
+      formData.set('phoneNumber', form.phoneNumber)
+      formData.set('city', form.city)
+      formData.set('governorate', form.governorate)
+      formData.set('address', form.address)
+      formData.set('password', form.password)
+      formData.set('role', form.role)
+      if (imageFile) formData.set('logo', imageFile)
+      console.log(formData)
+      const { data: res } = await axios.post('http://localhost:3000/api/v1/auth/register', formData, {
+        withCredentials: true,
+      })
+      console.log(imageFile)
+
       if (!res || !res.success) {
         toast(res?.message || 'فشل إنشاء الحساب', 'error')
         return
@@ -41,12 +69,7 @@ export default function Signup() {
       if (role) localStorage.setItem('user_role', String(role).toLowerCase())
       else localStorage.removeItem('user_role')
 
-      const token = data?.access_token || data?.token || (typeof data === 'string' ? data : null)
-      if (token) {
-        document.cookie = `access_token=${encodeURIComponent(token)};path=/;max-age=${60 * 60 * 24 * 30};SameSite=Lax`
-        try { refreshAuthFromCookies() } catch (_) { /* ignore */ }
-      }
-
+     
       await refreshUser()
       toast(res.message || 'تم إنشاء الحساب', 'success')
       navigate('/')
@@ -113,6 +136,11 @@ export default function Signup() {
             </div>
 
             <label className="input-group">
+              <span>الصورة</span>
+              <input type="file" accept="image/*" onChange={onImageChange} />
+            </label>
+
+            <label className="input-group">
               <span>كلمة المرور</span>
               <input type="password" placeholder="اختر كلمة مرور قوية" value={form.password} onChange={change('password')} autoComplete="new-password" />
             </label>
@@ -131,7 +159,7 @@ export default function Signup() {
 
             <div className="actions-row">
               <button type="submit" className="btn btn-primary">إنشاء الحساب</button>
-              <button type="reset" className="btn btn-ghost">مسح</button>
+              <button type="button" className="btn btn-ghost" onClick={resetForm}>مسح</button>
             </div>
 
             <p className="form-note">بالتسجيل أنت توافق على الشروط والأحكام وسياسة الخصوصية.</p>

@@ -1,8 +1,19 @@
 import { configureStore } from "@reduxjs/toolkit";
 import cartReducer from "./cartSlice";
+import productAdminReducer from "./productAdminSlice";
 
 const store = configureStore({
-  reducer: { cart: cartReducer },
+  reducer: {
+    cart: cartReducer,
+    productAdmin: productAdminReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredPaths: ["productAdmin.form.image"],
+        ignoredActions: ["productAdmin/setProductFormImage"],
+      },
+    }),
 });
 
 // persist to localStorage on changes

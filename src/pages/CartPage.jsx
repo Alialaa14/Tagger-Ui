@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import CartItemCard from '../components/cart/CartItemCard'
 import CartSummaryCard from '../components/cart/CartSummaryCard'
 import CouponModal from '../components/cart/CouponModal'
@@ -11,6 +12,7 @@ import CartSkeleton from '../components/cart/CartSkeleton'
 import CartErrorBanner from '../components/cart/CartErrorBanner'
 
 export default function CartPage() {
+  const { user, loading: authLoading } = useAuth()
   const {
     items,
     lineItems,
@@ -32,6 +34,8 @@ export default function CartPage() {
   const [error, setError] = useState('')
   const [couponOpen, setCouponOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
+  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const isCustomer = role === 'customer'
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 450)
@@ -40,6 +44,24 @@ export default function CartPage() {
 
   const isEmpty = !loading && items.length === 0
   const hasError = useMemo(() => Boolean(error), [error])
+
+  if (!authLoading && !isCustomer) {
+    return (
+      <div className="home-page">
+        <Navbar />
+        <main className="cart-page">
+          <div className="container">
+            <section className="cart-empty-state">
+              <h2>السلة متاحة للعملاء فقط</h2>
+              <p>حسابك الحالي لا يملك صلاحية الوصول إلى السلة.</p>
+              <Link to="/" className="btn cart-checkout-btn">العودة للرئيسية</Link>
+            </section>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="home-page">

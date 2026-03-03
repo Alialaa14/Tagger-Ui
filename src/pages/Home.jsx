@@ -43,7 +43,7 @@ export default function Home() {
 
   useEffect(() => {
     socket.on('connect', () => {
-      console.log('Connected to server')
+      console.log(`connected to ${socket.id}`)
     })
     return () => {
       socket.off('connect')

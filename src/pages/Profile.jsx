@@ -11,7 +11,6 @@ function toForm(user) {
     city: user?.city || '',
     governorate: user?.governorate || '',
     address: user?.address || '',
-    image: user?.image || user?.avatar || user?.profileImage || '',
   }
 }
 
@@ -19,6 +18,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const { user, loading, updateProfile, refreshUser } = useAuth()
   const [form, setForm] = useState(toForm(user))
+  const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -29,14 +29,25 @@ export default function Profile() {
     return (e) => setForm((p) => ({ ...p, [field]: e.target.value }))
   }
 
+  function onImageChange(e) {
+    const file = e.target.files?.[0] || null
+    setImageFile(file)
+  }
+
   async function submit(e) {
     e.preventDefault()
     setSaving(true)
     try {
-      const payload = Object.fromEntries(
-        Object.entries(form).filter(([, v]) => v !== null && v !== undefined)
-      )
-      const res = await updateProfile(payload)
+      const formData = new FormData()
+      formData.append('username', form.username)
+      formData.append('shopName', form.shopName)
+      formData.append('phoneNumber', form.phoneNumber)
+      formData.append('city', form.city)
+      formData.append('governorate', form.governorate)
+      formData.append('address', form.address)
+      if (imageFile) formData.append('image', imageFile)
+
+      const res = await updateProfile(formData)
       await refreshUser()
       toast(res?.message || 'تم تحديث بياناتك', 'success')
     } catch (err) {
@@ -59,7 +70,7 @@ export default function Profile() {
           <ul className="auth-hero__list">
             <li>تحديث الاسم ورقم الهاتف والعنوان</li>
             <li>تعديل بيانات المتجر</li>
-            <li>العودة إلى الصفحة الرئيسية بعد الحفظ</li>
+            <li>رفع صورة الحساب</li>
           </ul>
         </aside>
 
@@ -67,7 +78,7 @@ export default function Profile() {
           <header className="auth-header">
             <p className="auth-eyebrow">إدارة الحساب</p>
             <h2 id="profile-title">تعديل بيانات المستخدم</h2>
-            <p className="auth-sub">أي تعديل هنا يتم إرساله إلى `POST /api/v1/auth/me`.</p>
+            <p className="auth-sub">سيتم الإرسال إلى `POST /api/v1/auth/update-profile`.</p>
           </header>
 
           <form className="auth-form" onSubmit={submit}>
@@ -105,8 +116,8 @@ export default function Profile() {
             </div>
 
             <label className="input-group">
-              <span>رابط الصورة</span>
-              <input type="text" value={form.image} onChange={change('image')} dir="ltr" />
+              <span>الصورة</span>
+              <input type="file" accept="image/*" onChange={onImageChange} />
             </label>
 
             <div className="actions-row">

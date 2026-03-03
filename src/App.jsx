@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -7,10 +7,10 @@ import VerifyOTP from './pages/VerifyOTP'
 import ResetPassword from './pages/ResetPassword'
 import Orders from './pages/Orders'
 import AdminLayout from './pages/admin/AdminLayout'
-import Categories from './pages/admin/Categories'
-import Products from './pages/admin/Products'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import ProductManager from './pages/admin/ProductManager'
+import CategoryManager from './pages/admin/CategoryManager'
 import UsersOnline from './pages/admin/UsersOnline'
-import Coupons from './pages/admin/Coupons'
 import Home from './pages/Home'
 import Category from './pages/Category'
 import CategoryPage from './pages/CategoryPage'
@@ -20,7 +20,7 @@ import Profile from './pages/Profile'
 import CartPage from './pages/CartPage'
 import { RequireAdmin, RequireAuth } from './components/RouteGuards'
 
-export default function App(){
+export default function App() {
   return (
     <div className="app-shell">
       <main className="content">
@@ -42,13 +42,13 @@ export default function App(){
 
           <Route element={<RequireAdmin />}>
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Categories />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="products" element={<Products />} />
-              <Route path="coupons" element={<Coupons />} />
+              <Route index element={<AdminDashboard />} />
+              <Route path="categories" element={<CategoryManager />} />
+              <Route path="products" element={<ProductManager />} />
               <Route path="users-online" element={<UsersOnline />} />
             </Route>
           </Route>
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

@@ -3,6 +3,7 @@ import ActionButton from '../common/ActionButton'
 import DiscountSection from './DiscountSection'
 import useAddToCart from '../../hooks/useAddToCart'
 import useCheckAvailability from '../../hooks/useCheckAvailability'
+import { useAuth } from '../../context/AuthContext'
 
 function resolveCategoryLabel(category) {
   if (!category) return 'بدون تصنيف'
@@ -34,6 +35,7 @@ export function ProductCardSkeleton() {
 }
 
 export default function ProductCard({ product, loading = false }) {
+  const { user } = useAuth()
   const [isDiscountExpanded, setIsDiscountExpanded] = useState(false)
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false)
 
@@ -52,6 +54,8 @@ export default function ProductCard({ product, loading = false }) {
   } = useCheckAvailability()
 
   const productId = product?._id || product?.id || product?.image?.public_id || null
+  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const canAddToCart = role === 'customer'
   const discounts = Array.isArray(product?.discount) ? product.discount : []
   const categoryLabel = resolveCategoryLabel(product?.category)
   const heroDiscount = useMemo(() => bestTier(discounts), [discounts])
@@ -80,11 +84,7 @@ export default function ProductCard({ product, loading = false }) {
             className="product-card-media"
             loading="lazy"
           />
-          {hasDiscounts(discounts) && (
-            <span className="product-discount-badge">
-              خصومات كميات
-            </span>
-          )}
+          {hasDiscounts(discounts) && <span className="product-discount-badge">خصومات كميات</span>}
         </div>
 
         <div className="product-card-body">
@@ -97,9 +97,7 @@ export default function ProductCard({ product, loading = false }) {
               ${Number(product?.price || 0).toFixed(2)}
             </strong>
             {heroDiscount ? (
-              <span className="product-tier-hint">
-                خصم عند شراء {heroDiscount.quantity} قطع
-              </span>
+              <span className="product-tier-hint">خصم عند شراء {heroDiscount.quantity} قطع</span>
             ) : null}
           </div>
 
@@ -114,14 +112,16 @@ export default function ProductCard({ product, loading = false }) {
           )}
 
           <div className="product-actions-row">
-            <ActionButton
-              variant="primary"
-              loading={isAddingToCart}
-              disabled={!productId}
-              onClick={onAddToCart}
-            >
-              أضف إلى السلة
-            </ActionButton>
+            {canAddToCart ? (
+              <ActionButton
+                variant="primary"
+                loading={isAddingToCart}
+                disabled={!productId}
+                onClick={onAddToCart}
+              >
+                أضف إلى السلة
+              </ActionButton>
+            ) : null}
             <ActionButton
               variant="outline"
               loading={isCheckingAvailability}

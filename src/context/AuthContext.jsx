@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
 
   const updateProfile = useCallback(async (payload) => {
     setError(null)
-    const { data: res } = await axios.post(`${API_BASE}/me`, payload, { withCredentials: true })
+    const { data: res } = await axios.post(`${API_BASE}/update-profile`, payload, { withCredentials: true })
     const nextUser = normalizeUserPayload(res) || normalizeUserPayload(res?.data) || null
     if (nextUser) {
       setUser(nextUser)

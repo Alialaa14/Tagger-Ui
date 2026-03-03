@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import { useCart } from '../context/CartContext'
@@ -12,6 +12,9 @@ export default function Navbar() {
 
   const imageSrc = user?.image || user?.avatar || user?.profileImage || ''
   const userName = user?.username || user?.name || user?.shopName || 'المستخدم'
+  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const isAdmin = role === 'admin'
+  const isCustomer = role === 'customer'
 
   const handleSubmit = (value) => {
     const query = (value || q || '').trim()
@@ -28,8 +31,14 @@ export default function Navbar() {
           {!loading && !isAuthenticated && (
             <button className="btn btn-ghost" onClick={() => navigate('/login')}>تسجيل الدخول</button>
           )}
+
           {!loading && isAuthenticated && (
             <>
+              {isAdmin && (
+                <button className="admin-control-btn" onClick={() => navigate('/admin')}>
+                  لوحة التحكم
+                </button>
+              )}
               <button className="btn btn-ghost nav-user-btn" onClick={() => navigate('/profile')}>
                 {imageSrc ? (
                   <img src={imageSrc} alt={userName} className="nav-user-avatar" />
@@ -38,12 +47,17 @@ export default function Navbar() {
                 )}
                 <span>{userName}</span>
               </button>
-              <button className="btn btn-ghost" onClick={async () => { await logout(); navigate('/login') }}>تسجيل خروج</button>
+              <button className="btn btn-ghost" onClick={async () => { await logout(); navigate('/login') }}>
+                تسجيل خروج
+              </button>
             </>
           )}
-          <button className="btn" onClick={() => navigate('/cart')}>
-            سلة (<span className="cart-count">{totalQuantity}</span>)
-          </button>
+
+          {isCustomer ? (
+            <button className="btn" onClick={() => navigate('/cart')}>
+              سلة (<span className="cart-count">{totalQuantity}</span>)
+            </button>
+          ) : null}
         </div>
       </div>
     </header>
