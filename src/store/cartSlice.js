@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import productsSeed from "../data/seed_products";
 
 const loadState = () => {
   try {

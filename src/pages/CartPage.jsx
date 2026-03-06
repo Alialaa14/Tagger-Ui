@@ -10,6 +10,7 @@ import CouponModal from '../components/cart/CouponModal'
 import OrderNoteModal from '../components/cart/OrderNoteModal'
 import CartSkeleton from '../components/cart/CartSkeleton'
 import CartErrorBanner from '../components/cart/CartErrorBanner'
+import './cart.css'
 
 export default function CartPage() {
   const { user, loading: authLoading } = useAuth()
@@ -31,20 +32,23 @@ export default function CartPage() {
   } = useCart()
 
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
   const [couponOpen, setCouponOpen] = useState(false)
-  const [noteOpen, setNoteOpen] = useState(false)
-  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
-  const isCustomer = role === 'customer'
+  const [noteOpen,   setNoteOpen]   = useState(false)
+
+  // ⚠️  Adjust the role string to match your backend: 'user' | 'customer' | etc.
+  const role       = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const isCustomer = role === 'user'
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 450)
     return () => clearTimeout(timer)
   }, [])
 
-  const isEmpty = !loading && items.length === 0
+  const isEmpty  = !loading && items.length === 0
   const hasError = useMemo(() => Boolean(error), [error])
 
+  /* ── Guard: non-customer ── */
   if (!authLoading && !isCustomer) {
     return (
       <div className="home-page">
@@ -52,9 +56,10 @@ export default function CartPage() {
         <main className="cart-page">
           <div className="container">
             <section className="cart-empty-state">
+              <span className="cart-empty-icon">🔒</span>
               <h2>السلة متاحة للعملاء فقط</h2>
               <p>حسابك الحالي لا يملك صلاحية الوصول إلى السلة.</p>
-              <Link to="/" className="btn cart-checkout-btn">العودة للرئيسية</Link>
+              <Link to="/" className="btn btn-primary cart-checkout-btn">العودة للرئيسية</Link>
             </section>
           </div>
         </main>
@@ -68,31 +73,42 @@ export default function CartPage() {
       <Navbar />
 
       <main className="cart-page">
-        <div className="container">
+        <div className="container" dir="rtl">
+
+          {/* ── Header ── */}
           <header className="cart-page-head">
             <div>
               <p className="cart-kicker">Cart</p>
-              <h1>Your Cart</h1>
-              <p>Review quantities, discounts, coupon, and order note before checkout.</p>
+              <h1>سلة التسوق</h1>
+              <p>راجع الكميات والخصومات قبل إتمام الطلب.</p>
             </div>
             <div className="cart-head-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setCouponOpen(true)}>Coupon</button>
-              <button type="button" className="btn btn-ghost" onClick={() => setNoteOpen(true)}>Order note</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setCouponOpen(true)}>
+                🏷️ كوبون
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setNoteOpen(true)}>
+                📝 ملاحظة
+              </button>
             </div>
           </header>
 
+          {/* ── Error banner ── */}
           <CartErrorBanner message={hasError ? error : ''} onClose={() => setError('')} />
 
+          {/* ── Skeleton ── */}
           {loading && <CartSkeleton />}
 
+          {/* ── Empty ── */}
           {isEmpty && (
             <section className="cart-empty-state">
-              <h2>Your cart is empty</h2>
-              <p>Add products to unlock quantity discounts and checkout.</p>
-              <Link to="/" className="btn cart-checkout-btn">Go shopping</Link>
+              <span className="cart-empty-icon">🛒</span>
+              <h2>السلة فارغة</h2>
+              <p>أضف منتجات للاستفادة من خصومات الكمية وإتمام الطلب.</p>
+              <Link to="/" className="btn btn-primary cart-checkout-btn">تصفح المنتجات</Link>
             </section>
           )}
 
+          {/* ── Items + Summary ── */}
           {!loading && !isEmpty && (
             <section className="cart-page-grid">
               <div className="cart-items-list">
@@ -112,15 +128,18 @@ export default function CartPage() {
                 subtotal={subtotal}
                 totalDiscount={totalDiscount}
                 finalTotal={finalTotal}
-                onCheckout={() => setError('Checkout API integration is not wired yet.')}
+                couponCode={couponCode}
+                onCheckout={() => setError('ربط API الدفع لم يتم بعد.')}
                 onClear={clear}
                 disabled={items.length === 0}
               />
             </section>
           )}
+
         </div>
       </main>
 
+      {/* ── Modals ── */}
       <CouponModal
         open={couponOpen}
         onClose={() => setCouponOpen(false)}

@@ -1,0 +1,149 @@
+/* ══════════════════════════════════════════════════════════════
+   HOW IT WORKS SECTION
+   File: src/components/home/HowItWorks.css
+══════════════════════════════════════════════════════════════ */
+
+/* ── Header (reuses home-category-header style) ──────────────── */
+
+.how-header {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.how-title {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 900;
+  color: var(--grey-900, #0f172a);
+}
+
+.how-subtitle {
+  margin: 0;
+  color: var(--grey-400, #94a3b8);
+  font-size: 14px;
+}
+
+/* ── Steps row ───────────────────────────────────────────────── */
+
+.how-steps {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+/* Arrow connector between steps */
+.how-step-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: rgba(22, 163, 74, 0.35);
+  padding: 0 4px;
+  margin-top: -16px; /* align with mid-card */
+  user-select: none;
+}
+
+/* ── Individual card ─────────────────────────────────────────── */
+
+.how-step-card {
+  flex: 1;
+  background: #ffffff;
+  border: 1.5px solid rgba(22, 163, 74, 0.12);
+  border-radius: 20px;
+  padding: 28px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  transition: transform 240ms cubic-bezier(.4, 0, .2, 1),
+              box-shadow 240ms cubic-bezier(.4, 0, .2, 1),
+              border-color 240ms cubic-bezier(.4, 0, .2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.how-step-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #22c55e, #15803d);
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.how-step-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+  border-color: rgba(22, 163, 74, 0.28);
+}
+
+.how-step-card:hover::before {
+  opacity: 1;
+}
+
+/* Step number badge */
+.how-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.30);
+}
+
+/* Step icon */
+.how-step-icon {
+  font-size: 36px;
+  line-height: 1;
+  margin: 4px 0;
+}
+
+/* Step title */
+.how-step-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Step description */
+.how-step-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .how-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .how-step-arrow {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .how-steps {
+    grid-template-columns: 1fr;
+  }
+}

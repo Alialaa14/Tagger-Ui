@@ -10,7 +10,9 @@ import socket from '../socket'
 import { useAuth } from '../context/AuthContext'
 import useHomeData from '../hooks/useHomeData'
 import "./home.css"
-
+import FlashDeals from '../components/home/FlashDeals'
+import '../components/home/FlashDeals.css'
+import HowItWorks from '../components/home/HowItWorks'
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
 
@@ -73,7 +75,8 @@ export default function Home() {
             </div>
           )}
         </section>
-
+  
+<FlashDeals products={bestSelling} />
         {/* ── Best-selling products ─────────────────────────────── */}
         <section className="section container" dir="rtl">
           <div className="section-head">
@@ -101,7 +104,7 @@ export default function Home() {
             </div>
           )}
         </section>
-
+        <HowItWorks/>
         {/* ── Values banner (unchanged) ─────────────────────────── */}
         <section className="values-banner">
           <div className="values-inner">

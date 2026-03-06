@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import "./Navbar.css"
+import "./navbar.css"
 
 /* ── Icons ─────────────────────────────────────────────────── */
 const Icon = ({ d, size = 18, stroke = 2 }) => (
@@ -30,7 +30,7 @@ const ICONS = {
 
 /* ── Helpers ────────────────────────────────────────────────── */
 function roleLabel(role) {
-  const map = { admin: 'مدير', trader: 'تاجر', customer: 'عميل' }
+  const map = { admin: 'مدير', trader: 'تاجر', customer: 'عميل', user: 'عميل' }
   return map[role] || role || 'مستخدم'
 }
 
@@ -38,6 +38,7 @@ function roleBadgeClass(role) {
   if (role === 'admin')    return 'nb-badge nb-badge--admin'
   if (role === 'trader')   return 'nb-badge nb-badge--trader'
   if (role === 'customer') return 'nb-badge nb-badge--customer'
+  if (role === 'user')     return 'nb-badge nb-badge--customer'
   return 'nb-badge'
 }
 
@@ -143,7 +144,7 @@ export default function Navbar() {
   const userName = user?.username || user?.name || user?.shopName || 'المستخدم'
   const role     = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
   const isAdmin    = role === 'admin'
-  const isCustomer = role === 'customer'
+  const isCustomer = role === 'customer' || role === 'user'
 
   /* Close dropdown on outside click */
   useEffect(() => {
@@ -303,6 +304,24 @@ export default function Navbar() {
             <div className="nb-mobile-auth">
               <button className="nb-btn-ghost nb-btn--full" onClick={() => { navigate('/login'); setMobileMenu(false) }}>تسجيل الدخول</button>
               <button className="nb-btn-primary nb-btn--full" onClick={() => { navigate('/signup'); setMobileMenu(false) }}>إنشاء حساب</button>
+            </div>
+          )}
+
+          {/* Mobile cart controls */}
+          {!loading && isAuthenticated && isCustomer && (
+            <div className="nb-mobile-auth">
+              <button
+                className="nb-btn-ghost nb-btn--full"
+                onClick={() => { navigate('/cart'); setMobileMenu(false) }}
+              >
+                السلة {totalQuantity > 0 ? `(${totalQuantity})` : ''}
+              </button>
+              <button
+                className="nb-btn-primary nb-btn--full"
+                onClick={() => { navigate('/checkout'); setMobileMenu(false) }}
+              >
+                إتمام الطلب
+              </button>
             </div>
           )}
         </div>

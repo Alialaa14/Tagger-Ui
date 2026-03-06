@@ -1,31 +1,88 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
-const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
-
+/**
+ * CartSummaryCard
+ * Props:
+ *   totalQuantity  — number
+ *   subtotal       — number
+ *   totalDiscount  — number
+ *   finalTotal     — number
+ *   couponCode     — string | null
+ *   onCheckout     — () => void
+ *   onClear        — () => void
+ *   disabled       — bool
+ */
 export default function CartSummaryCard({
-  totalQuantity,
-  subtotal,
-  totalDiscount,
-  finalTotal,
+  totalQuantity = 0,
+  subtotal = 0,
+  totalDiscount = 0,
+  finalTotal = 0,
+  couponCode = null,
   onCheckout,
   onClear,
-  disabled,
+  disabled = false,
 }) {
+  const navigate = useNavigate()
+
+  function handleCheckout() {
+    if (onCheckout) onCheckout()
+    else navigate('/checkout')
+  }
+
   return (
-    <aside className="cart-summary-card">
-      <h2>Order Summary</h2>
-      <div className="cart-summary-lines">
-        <div><span>Total quantity</span><strong>{totalQuantity}</strong></div>
-        <div><span>Subtotal</span><strong>{money.format(subtotal)}</strong></div>
-        <div><span>Total discount</span><strong>-{money.format(totalDiscount)}</strong></div>
-        <div className="cart-summary-total"><span>Final total</span><strong>{money.format(finalTotal)}</strong></div>
+    <aside className="cart-summary-card" aria-label="ملخص الطلب" dir="rtl">
+      <h2 className="cart-summary-title">
+        <span className="cart-summary-title-icon">🧾</span>
+        ملخص الطلب
+      </h2>
+
+      {/* Rows */}
+      <div className={`cart-sum-row`}>
+        <span>المجموع الفرعي ({totalQuantity} قطعة)</span>
+        <span>{subtotal.toFixed(2)} ج.م</span>
       </div>
 
-      <button type="button" className="btn cart-checkout-btn" onClick={onCheckout} disabled={disabled}>
-        Proceed to checkout
+      {totalDiscount > 0 && (
+        <div className="cart-sum-row cart-sum-row-save">
+          <span>إجمالي الخصم</span>
+          <span>- {totalDiscount.toFixed(2)} ج.م</span>
+        </div>
+      )}
+
+      {couponCode && (
+        <div className="cart-coupon-tag">
+          <div className="cart-coupon-tag-left">
+            <span>🏷️</span>
+            <span>كوبون مطبّق</span>
+          </div>
+          <span className="cart-coupon-code">{couponCode}</span>
+        </div>
+      )}
+
+      <div className="cart-summary-divider" />
+
+      <div className="cart-sum-row cart-sum-row-bold cart-sum-row-green">
+        <span>الإجمالي النهائي</span>
+        <span>{finalTotal.toFixed(2)} ج.م</span>
+      </div>
+
+      {/* CTA */}
+      <button
+        className="cart-checkout-action"
+        onClick={handleCheckout}
+        disabled={disabled}
+      >
+        إتمام الطلب →
       </button>
-      <button type="button" className="btn btn-ghost cart-clear-btn" onClick={onClear} disabled={disabled}>
-        Clear cart
+
+      <button
+        className="cart-clear-btn"
+        onClick={onClear}
+        disabled={disabled}
+        type="button"
+      >
+        إفراغ السلة
       </button>
     </aside>
   )

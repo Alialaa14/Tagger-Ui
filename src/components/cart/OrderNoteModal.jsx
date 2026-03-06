@@ -1,37 +1,56 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useState } from 'react'
 
-const LIMIT = 300
-
+/**
+ * OrderNoteModal
+ * Props:
+ *   open          — bool
+ *   onClose       — () => void
+ *   initialValue  — string
+ *   onSave        — (note: string) => void
+ */
 export default function OrderNoteModal({ open, onClose, initialValue = '', onSave }) {
-  const [value, setValue] = useState(initialValue)
-  const count = useMemo(() => value.length, [value])
-
-  useEffect(() => {
-    if (open) setValue(initialValue || '')
-  }, [open, initialValue])
+  const [note, setNote] = useState(initialValue)
 
   if (!open) return null
 
+  function handleSave() {
+    onSave(note.trim())
+    onClose()
+  }
+
   return (
-    <div className="cart-modal-overlay open" onClick={onClose}>
-      <div className="cart-mini-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Order note</h3>
-        <div className="cart-mini-form">
-          <textarea
-            value={value}
-            onChange={(e) => setValue(e.target.value.slice(0, LIMIT))}
-            placeholder="Write your order note..."
-            rows={5}
-          />
-          <p className="note-counter">{count}/{LIMIT}</p>
-          <div className="cart-mini-actions">
-            <button type="button" className="btn cart-checkout-btn" onClick={() => { onSave(value); onClose() }}>
-              Save
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
-              Cancel
-            </button>
+    <div
+      className="cart-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="note-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="cart-modal" dir="rtl">
+        {/* Head */}
+        <div className="cart-modal-head">
+          <div>
+            <h3 id="note-modal-title">📝 ملاحظة الطلب</h3>
+            <p>أضف أي تعليمات خاصة تريد إيصالها مع طلبك.</p>
           </div>
+          <button className="cart-modal-close" onClick={onClose} aria-label="إغلاق">✕</button>
+        </div>
+
+        {/* Textarea */}
+        <textarea
+          className="cart-modal-textarea"
+          rows={4}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="مثال: التوصيل بعد الساعة 6 مساءً، الباب الخلفي…"
+          dir="rtl"
+          autoFocus
+        />
+
+        {/* Actions */}
+        <div className="cart-modal-actions">
+          <button className="btn btn-ghost" onClick={onClose} type="button">إلغاء</button>
+          <button className="btn btn-primary" onClick={handleSave} type="button">حفظ الملاحظة</button>
         </div>
       </div>
     </div>

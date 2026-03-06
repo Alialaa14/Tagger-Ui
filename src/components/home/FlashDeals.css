@@ -1,0 +1,288 @@
+/* ══════════════════════════════════════════════════════════════
+   FLASH DEALS SECTION
+   File: src/components/home/FlashDeals.css
+   Add import to Home.jsx: import '../components/home/FlashDeals.css'
+══════════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper ─────────────────────────────────────────── */
+
+.flash-deals-section {
+  /* slight warm tint to separate from surrounding sections */
+  background: linear-gradient(135deg, #f0fdf4 0%, #fefce8 100%);
+  border-radius: 24px;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border: 1.5px solid rgba(22, 163, 74, 0.10);
+}
+
+/* ── Header row ──────────────────────────────────────────────── */
+
+.flash-deals-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.flash-deals-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flash-deals-icon {
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(234, 179, 8, 0.4));
+  animation: flashPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes flashPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
+}
+
+.flash-deals-title {
+  margin: 0 0 3px;
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 900;
+  color: var(--grey-900, #0f172a);
+}
+
+.flash-deals-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--grey-400, #94a3b8);
+}
+
+/* ── Countdown timer ─────────────────────────────────────────── */
+
+.flash-deals-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1.5px solid rgba(22, 163, 74, 0.18);
+  border-radius: 14px;
+  padding: 10px 16px;
+}
+
+.flash-timer-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--grey-400, #94a3b8);
+  white-space: nowrap;
+}
+
+.flash-timer-blocks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.flash-timer-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: #ffffff;
+  border: 1.5px solid rgba(22, 163, 74, 0.15);
+  border-radius: 9px;
+  padding: 5px 10px;
+  min-width: 42px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.flash-timer-digit {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--g600, #16a34a);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.flash-timer-unit {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--grey-400, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.flash-timer-sep {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--g600, #16a34a);
+  line-height: 1;
+  padding-bottom: 8px;
+}
+
+.flash-expired-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  background: #fef2f2;
+  border: 1.5px solid rgba(220, 38, 38, 0.15);
+  border-radius: 999px;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ── Scrollable track ────────────────────────────────────────── */
+
+.flash-deals-scroll-track {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 163, 74, 0.25) transparent;
+  padding-bottom: 6px;
+}
+
+.flash-deals-scroll-track::-webkit-scrollbar {
+  height: 4px;
+}
+.flash-deals-scroll-track::-webkit-scrollbar-thumb {
+  background: rgba(22, 163, 74, 0.25);
+  border-radius: 999px;
+}
+
+.flash-deals-row {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  padding-bottom: 2px;
+}
+
+/* ── Deal card ───────────────────────────────────────────────── */
+
+.deal-card {
+  width: 200px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 1.5px solid rgba(22, 163, 74, 0.12);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  transition: transform 240ms cubic-bezier(.4, 0, .2, 1),
+              box-shadow 240ms cubic-bezier(.4, 0, .2, 1),
+              border-color 240ms cubic-bezier(.4, 0, .2, 1);
+}
+
+.deal-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  border-color: rgba(22, 163, 74, 0.30);
+}
+
+/* Image */
+.deal-card-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--g50, #f0fdf4);
+}
+
+.deal-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms ease;
+}
+
+.deal-card:hover .deal-card-image {
+  transform: scale(1.05);
+}
+
+.deal-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  background: var(--g50, #f0fdf4);
+}
+
+/* Discount badge */
+.deal-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+  white-space: nowrap;
+}
+
+/* Body */
+.deal-card-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.deal-card-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.deal-card-pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.deal-card-new-price {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--g600, #16a34a);
+}
+
+.deal-card-old-price {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .flash-deals-section {
+    border-radius: 0;
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  .flash-deals-timer {
+    padding: 8px 12px;
+  }
+
+  .flash-timer-digit {
+    font-size: 16px;
+  }
+
+  .flash-timer-block {
+    min-width: 36px;
+    padding: 4px 8px;
+  }
+}

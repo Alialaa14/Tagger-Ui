@@ -5,7 +5,6 @@ import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
 import VerifyOTP from './pages/VerifyOTP'
 import ResetPassword from './pages/ResetPassword'
-import Orders from './pages/Orders'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ProductManager from './pages/admin/ProductManager'
@@ -19,7 +18,10 @@ import NotFound from './pages/NotFound'
 import Profile from './pages/Profile'
 import CartPage from './pages/CartPage'
 import { RequireAdmin, RequireAuth } from './components/RouteGuards'
-
+import CheckoutPage from "./pages/CheckoutPage"
+import CustomerOrdersPage from "./pages/CustomerOrdersPage"
+import TraderOrdersPage from "./pages/TraderOrdersPage"
+import AdminOrdersPage from "./pages/AdminOrdersPage"
 export default function App() {
   return (
     <div className="app-shell">
@@ -28,7 +30,6 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/orders" element={<Orders />} />
           <Route path="/categories/:id" element={<CategoryPage />} />
           <Route path="/category/:name" element={<Category />} />
           <Route path="/login" element={<Login />} />
@@ -36,8 +37,12 @@ export default function App() {
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/verify-otp" element={<VerifyOTP />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route element={<RequireAuth />}>
             <Route path="/profile" element={<Profile />} />
+            <Route path="/orders"    element={<CustomerOrdersPage />} />
+            <Route path="/trader/orders" element={<TraderOrdersPage />} />
+           <Route path="/admin/orders"  element={<AdminOrdersPage />} />
           </Route>
 
           <Route element={<RequireAdmin />}>
