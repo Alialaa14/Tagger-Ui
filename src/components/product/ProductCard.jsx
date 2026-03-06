@@ -4,6 +4,7 @@ import DiscountSection from './DiscountSection'
 import useAddToCart from '../../hooks/useAddToCart'
 import useCheckAvailability from '../../hooks/useCheckAvailability'
 import { useAuth } from '../../context/AuthContext'
+import "./product-card.css"
 
 function resolveCategoryLabel(category) {
   if (!category) return 'بدون تصنيف'
@@ -55,7 +56,7 @@ export default function ProductCard({ product, loading = false }) {
 
   const productId = product?._id || product?.id || product?.image?.public_id || null
   const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
-  const canAddToCart = role === 'customer'
+  const canAddToCart = role === 'user'
   const discounts = Array.isArray(product?.discount) ? product.discount : []
   const categoryLabel = resolveCategoryLabel(product?.category)
   const heroDiscount = useMemo(() => bestTier(discounts), [discounts])

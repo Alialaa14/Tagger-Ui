@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import "./home-product-card.css"
 
 export default function CategoryCard({ category }) {
   const navigate = useNavigate()

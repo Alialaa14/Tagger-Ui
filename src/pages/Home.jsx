@@ -9,6 +9,7 @@ import CategorySkeleton from '../components/home/CategorySkeleton'
 import socket from '../socket'
 import { useAuth } from '../context/AuthContext'
 import useHomeData from '../hooks/useHomeData'
+import "./home.css"
 
 
 // ─── Home ─────────────────────────────────────────────────────────────────────

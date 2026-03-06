@@ -1,0 +1,174 @@
+/* ═══════════════════════════════════════════════════════════════
+   FOOTER  (.site-footer)
+   Matches the green & white marketplace theme (index.css schema)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Shell ──────────────────────────────────────────────────── */
+
+.site-footer {
+  background: var(--grey-900);
+  color: var(--grey-400);
+  font-size: 14px;
+  direction: rtl;
+}
+
+/* ── Main columns row ───────────────────────────────────────── */
+
+.footer-inner {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 56px 24px 40px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+/* ── Column ─────────────────────────────────────────────────── */
+
+.footer-col h4 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: 0.3px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+/* Green underline accent on column headings */
+.footer-col h4::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-600), var(--green-400));
+}
+
+/* Nav links inside each column */
+.footer-col nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-col nav a {
+  color: var(--grey-400);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 180ms ease, padding-right 180ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-col nav a:hover {
+  color: var(--green-400);
+  padding-right: 4px;
+}
+
+/* ── Social links (last column) ─────────────────────────────── */
+
+.social-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--grey-400);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  transition: color 180ms ease;
+}
+
+.social-links a:hover {
+  color: var(--green-400);
+}
+
+/* ── Bottom bar ─────────────────────────────────────────────── */
+
+.footer-bottom {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 18px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-bottom span {
+  font-size: 12px;
+  color: var(--grey-400);
+  font-weight: 600;
+}
+
+/* Mini links row */
+.footer-mini-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer-mini-links a {
+  color: var(--grey-400);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color 180ms ease;
+  position: relative;
+}
+
+.footer-mini-links a:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.footer-mini-links a:hover {
+  color: var(--green-400);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .footer-inner {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 40px;
+    padding-top: 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 40px 16px 32px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .footer-mini-links {
+    gap: 16px;
+  }
+}
