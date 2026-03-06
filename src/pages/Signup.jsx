@@ -13,7 +13,7 @@ const initialForm = {
   governorate: '',
   address: '',
   password: '',
-  role: 'trader',
+  role: 'user',
 }
 
 export default function Signup() {
@@ -151,7 +151,7 @@ export default function Signup() {
                 <button type="button" className={`role-option ${form.role === 'trader' ? 'is-active' : ''}`} onClick={() => setRole('trader')}>
                   تاجر
                 </button>
-                <button type="button" className={`role-option ${form.role === 'customer' ? 'is-active' : ''}`} onClick={() => setRole('customer')}>
+                <button type="button" className={`role-option ${form.role === 'user' ? 'is-active' : ''}`} onClick={() => setRole('user')}>
                   عميل
                 </button>
               </div>

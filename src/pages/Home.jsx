@@ -1,95 +1,107 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import React, { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import BannerCarousel from '../components/BannerCarousel'
+import ProductCard from '../components/ProductCard'
 import Footer from '../components/Footer'
+import CategoryCard from '../components/home/CategoryCard'
+import CategorySkeleton from '../components/home/CategorySkeleton'
 import socket from '../socket'
-import CategorySection from '../components/home/CategorySection'
-import HomeProductCard, { HomeProductCardSkeleton } from '../components/home/HomeProductCard'
-import seedProducts from '../data/seed_products'
+import { useAuth } from '../context/AuthContext'
+import useHomeData from '../hooks/useHomeData'
 
-/* ─── Hook: fetch best-sellers ───────────────────────────────── */
-function useBestSellers(limit = 8) {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
 
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const { data } = await axios.get('http://localhost:3000/api/v1/product', {
-          params: { sortBy: 'sales', sortOrder: 'desc', limit },
-          withCredentials: true,
-        })
-        const payload = data?.data?.products || data?.data || data?.products || data
-        const list = Array.isArray(payload) ? payload : []
-        if (!mounted) return
-        setProducts(
-          list.length
-            ? list
-            : [...seedProducts].sort((a, b) => (b.sales || 0) - (a.sales || 0)).slice(0, limit)
-        )
-      } catch {
-        if (!mounted) return
-        setError('تعذر تحميل المنتجات — يتم عرض بيانات تجريبية.')
-        setProducts([...seedProducts].sort((a, b) => (b.sales || 0) - (a.sales || 0)).slice(0, limit))
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    })()
-    return () => { mounted = false }
-  }, [limit])
+// ─── Home ─────────────────────────────────────────────────────────────────────
 
-  return { products, loading, error }
-}
-
-/* ─── Best Sellers Section ───────────────────────────────────── */
-function BestSellersSection() {
-  const { products, loading, error } = useBestSellers(8)
-
-  return (
-    <section className="bs-root section container" dir="rtl" aria-labelledby="bs-title">
-
-      {/* Header */}
-      <header className="bs-header">
-        <span className="bs-header__label">🔥 الأكثر مبيعاً</span>
-        <h2 id="bs-title" className="bs-header__title">منتجات يختارها عملاؤنا</h2>
-        <div className="bs-header__bar" />
-        <p className="bs-header__sub">مختارة بناءً على أعلى معدلات المبيعات</p>
-      </header>
-
-      {error && <div className="bs-error" role="alert">⚠️ {error}</div>}
-
-      <div className="bs-grid">
-        {loading
-          ? Array.from({ length: 8 }).map((_, i) => <HomeProductCardSkeleton key={i} />)
-          : products.map((p, i) => (
-              <HomeProductCard key={p._id || p.id || p.name || i} product={p} />
-            ))
-        }
-      </div>
-    </section>
-  )
-}
-
-/* ─── Page ───────────────────────────────────────────────────── */
 export default function Home() {
+  const { isAuthenticated } = useAuth()
+
+  // Single request → both categories and best-selling products
+  const {
+    categories,
+    bestSelling,
+    isLoading,
+    error,
+    hasCategories,
+    hasBestSelling,
+  } = useHomeData()
+
   useEffect(() => {
-    socket.on('connect', () => console.log(`socket: ${socket.id}`))
+    socket.on('connect', () => console.log(`connected to ${socket.id}`))
     return () => { socket.off('connect') }
   }, [])
 
   return (
     <div className="home-page">
       <Navbar />
+
       <main className="home-content">
         <BannerCarousel />
-        <CategorySection />
-        <BestSellersSection />
 
+        {/* ── Categories ───────────────────────────────────────── */}
+        <section
+          className="home-category-section section container"
+          dir="rtl"
+          aria-labelledby="home-categories-title"
+        >
+          <header className="home-category-header">
+            <h3 id="home-categories-title">تصفح حسب الفئة</h3>
+            <span className="home-category-accent" />
+            <p>اختر الفئة المناسبة واستكشف المنتجات</p>
+          </header>
+
+          {error && (
+            <div className="home-category-error" role="alert">{error}</div>
+          )}
+
+          {isLoading && (
+            <div className="home-category-grid">
+              {[1, 2, 3, 4].map((n) => <CategorySkeleton key={n} />)}
+            </div>
+          )}
+
+          {!isLoading && !hasCategories && (
+            <div className="home-category-empty">لا توجد فئات متاحة حاليا.</div>
+          )}
+
+          {!isLoading && hasCategories && (
+            <div className="home-category-grid">
+              {categories.map((cat) => (
+                <CategoryCard key={cat.id} category={cat} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── Best-selling products ─────────────────────────────── */}
+        <section className="section container" dir="rtl">
+          <div className="section-head">
+            <h3>الأكثر شراء</h3>
+            <p>منتجات مختارة بناء على طلبات العملاء.</p>
+          </div>
+
+          {isLoading && (
+            <div className="products-grid">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="home-category-skeleton product-card-skeleton" />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && !hasBestSelling && (
+            <div className="home-category-empty">لا توجد منتجات متاحة حاليا.</div>
+          )}
+
+          {!isLoading && hasBestSelling && (
+            <div className="products-grid">
+              {bestSelling.map((p) => (
+                <ProductCard key={p.id || p.name} product={p} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── Values banner (unchanged) ─────────────────────────── */}
         <section className="values-banner">
           <div className="values-inner">
             <div>
@@ -97,13 +109,14 @@ export default function Home() {
               <p>جودة موثوقة، أسعار واضحة، ودعم سريع يساعدك على النمو.</p>
             </div>
             <div className="values-tags">
-              <span>🌿 تجربة عربية متكاملة</span>
-              <span>🚚 شحن سريع</span>
-              <span>🔒 دفع آمن</span>
+              <span>تجربة عربية متكاملة</span>
+              <span>شحن سريع</span>
+              <span>دفع آمن</span>
             </div>
           </div>
         </section>
       </main>
+
       <Footer />
     </div>
   )

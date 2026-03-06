@@ -1,5 +1,6 @@
 ﻿import React from 'react'
 import { Link } from 'react-router-dom'
+import "./admin-theme.css"
 
 export default function AdminDashboard() {
   return (
