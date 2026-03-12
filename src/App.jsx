@@ -11,7 +11,7 @@ import ProductManager from './pages/admin/ProductManager'
 import CategoryManager from './pages/admin/CategoryManager'
 import UsersOnline from './pages/admin/UsersOnline'
 import Home from './pages/Home'
-import Category from './pages/Category'
+import CategoriesPage from './pages/CategoriesPage'
 import CategoryPage from './pages/CategoryPage'
 import SearchResults from './pages/SearchResults'
 import NotFound from './pages/NotFound'
@@ -28,10 +28,10 @@ export default function App() {
       <main className="content">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/categories/:id" element={<CategoryPage />} />
-          <Route path="/category/:name" element={<Category />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot" element={<ForgotPassword />} />

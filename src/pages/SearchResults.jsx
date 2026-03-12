@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import products from '../data/seed_products'
-import ProductCard from '../components/ProductCard'
 
 function useQuery(){
   return new URLSearchParams(useLocation().search)

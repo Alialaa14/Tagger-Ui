@@ -44,7 +44,7 @@ function roleBadgeClass(role) {
 
 /* ── User dropdown panel ────────────────────────────────────── */
 function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose, logout, navigate }) {
-  const imageSrc   = user?.image?.url || user?.image || user?.avatar || user?.profileImage || ''
+  const imageSrc   = user?.logo?.url || user?.logo || user?.avatar || user?.logo.url || ''
   const userName   = user?.username  || user?.name  || user?.shopName || 'المستخدم'
   const city       = user?.city       || ''
   const governorate = user?.governorate || ''
@@ -53,7 +53,6 @@ function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose,
   const location   = [city, governorate].filter(Boolean).join('، ')
 
   const go = (path) => { navigate(path); onClose() }
-
   return (
     <div className="nb-dropdown" dir="rtl">
       {/* ── User info card ── */}
@@ -140,7 +139,7 @@ export default function Navbar() {
   const { totalQuantity }                          = useCart()
   const { user, isAuthenticated, loading, logout } = useAuth()
 
-  const imageSrc = user?.image?.url || user?.image || user?.avatar || user?.profileImage || ''
+  const imageSrc = user?.image?.url || ''
   const userName = user?.username || user?.name || user?.shopName || 'المستخدم'
   const role     = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
   const isAdmin    = role === 'admin'

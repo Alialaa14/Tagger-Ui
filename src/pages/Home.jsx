@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+﻿import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import BannerCarousel from '../components/BannerCarousel'
@@ -7,19 +7,15 @@ import Footer from '../components/Footer'
 import CategoryCard from '../components/home/CategoryCard'
 import CategorySkeleton from '../components/home/CategorySkeleton'
 import socket from '../socket'
-import { useAuth } from '../context/AuthContext'
 import useHomeData from '../hooks/useHomeData'
-import "./home.css"
+import './home.css'
 import FlashDeals from '../components/home/FlashDeals'
 import '../components/home/FlashDeals.css'
 import HowItWorks from '../components/home/HowItWorks'
 
-// ─── Home ─────────────────────────────────────────────────────────────────────
-
 export default function Home() {
-  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
-  // Single request → both categories and best-selling products
   const {
     categories,
     bestSelling,
@@ -31,7 +27,9 @@ export default function Home() {
 
   useEffect(() => {
     socket.on('connect', () => console.log(`connected to ${socket.id}`))
-    return () => { socket.off('connect') }
+    return () => {
+      socket.off('connect')
+    }
   }, [])
 
   return (
@@ -41,21 +39,29 @@ export default function Home() {
       <main className="home-content">
         <BannerCarousel />
 
-        {/* ── Categories ───────────────────────────────────────── */}
         <section
           className="home-category-section section container"
           dir="rtl"
           aria-labelledby="home-categories-title"
         >
           <header className="home-category-header">
-            <h3 id="home-categories-title">تصفح حسب الفئة</h3>
-            <span className="home-category-accent" />
-            <p>اختر الفئة المناسبة واستكشف المنتجات</p>
+            <div className="home-category-header__top">
+              <div>
+                <h3 id="home-categories-title">تصفح حسب الفئة</h3>
+                <span className="home-category-accent" />
+                <p>اختر الفئة المناسبة واستكشف المنتجات</p>
+              </div>
+              <button
+                type="button"
+                className="home-category-ctrl-btn"
+                onClick={() => navigate('/categories')}
+              >
+                عرض كل الفئات
+              </button>
+            </div>
           </header>
 
-          {error && (
-            <div className="home-category-error" role="alert">{error}</div>
-          )}
+          {error && <div className="home-category-error" role="alert">{error}</div>}
 
           {isLoading && (
             <div className="home-category-grid">
@@ -75,9 +81,9 @@ export default function Home() {
             </div>
           )}
         </section>
-  
-<FlashDeals products={bestSelling} />
-        {/* ── Best-selling products ─────────────────────────────── */}
+
+        <FlashDeals products={bestSelling} />
+
         <section className="section container" dir="rtl">
           <div className="section-head">
             <h3>الأكثر شراء</h3>
@@ -104,8 +110,9 @@ export default function Home() {
             </div>
           )}
         </section>
-        <HowItWorks/>
-        {/* ── Values banner (unchanged) ─────────────────────────── */}
+
+        <HowItWorks />
+
         <section className="values-banner">
           <div className="values-inner">
             <div>

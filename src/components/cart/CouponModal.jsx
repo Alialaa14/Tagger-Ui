@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 /**
  * CouponModal
@@ -8,15 +8,40 @@ import React, { useState } from 'react'
  *   onApply      — (code: string) => void
  *   initialCode  — string
  */
-export default function CouponModal({ open, onClose, onApply, initialCode = '' }) {
+export default function CouponModal({ open, onClose, onApply, onCancelCoupon, initialCode = '' }) {
   const [code, setCode] = useState(initialCode)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setCode(initialCode || '')
+  }, [open, initialCode])
 
   if (!open) return null
 
-  function handleApply() {
+  async function handleApply() {
     if (!code.trim()) return
-    onApply(code.trim().toUpperCase())
-    onClose()
+    setSubmitting(true)
+    try {
+      const result = await onApply(code.trim().toUpperCase())
+      if (result?.ok !== false) onClose()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleCancelCoupon() {
+    if (!onCancelCoupon) return
+    setSubmitting(true)
+    try {
+      const result = await onCancelCoupon()
+      if (result?.ok !== false) {
+        setCode('')
+        onClose()
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function handleKey(e) {
@@ -55,13 +80,18 @@ export default function CouponModal({ open, onClose, onApply, initialCode = '' }
             autoComplete="off"
             spellCheck={false}
           />
-          <button className="cart-modal-apply-btn" onClick={handleApply}>
-            تطبيق
+          <button className="cart-modal-apply-btn" onClick={handleApply} disabled={submitting}>
+            {submitting ? '...' : 'تطبيق'}
           </button>
         </div>
 
         {/* Cancel */}
         <div className="cart-modal-actions">
+          {initialCode && (
+            <button className="btn btn-ghost" onClick={handleCancelCoupon} type="button" disabled={submitting}>
+              إلغاء الكوبون
+            </button>
+          )}
           <button className="btn btn-ghost" onClick={onClose} type="button">إلغاء</button>
         </div>
       </div>

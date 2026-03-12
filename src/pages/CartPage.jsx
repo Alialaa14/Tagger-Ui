@@ -21,34 +21,40 @@ export default function CartPage() {
     subtotal,
     totalDiscount,
     finalTotal,
+    couponName,
     couponCode,
+    couponDiscount,
     orderNote,
     increment,
     decrement,
     removeItem,
     clear,
+    clearCoupon,
     setOrderNote,
     applyCoupon,
+    getCart,
+    loading: cartLoading,
+    error: cartError,
   } = useCart()
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState('')
+  const [actionError, setActionError] = useState('')
   const [couponOpen, setCouponOpen] = useState(false)
-  const [noteOpen,   setNoteOpen]   = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
 
-  // ⚠️  Adjust the role string to match your backend: 'user' | 'customer' | etc.
-  const role       = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
-  const isCustomer = role === 'user'
+  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const isCustomer = role === 'user' || role === 'customer'
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 450)
-    return () => clearTimeout(timer)
-  }, [])
+    if (authLoading || !isCustomer) return
+    getCart().catch(() => {
+      // handled by context error state
+    })
+  }, [authLoading, isCustomer, getCart])
 
-  const isEmpty  = !loading && items.length === 0
-  const hasError = useMemo(() => Boolean(error), [error])
+  const loading = authLoading || cartLoading
+  const isEmpty = !loading && items.length === 0
+  const errorMessage = useMemo(() => actionError || cartError || '', [actionError, cartError])
 
-  /* ── Guard: non-customer ── */
   if (!authLoading && !isCustomer) {
     return (
       <div className="home-page">
@@ -74,8 +80,6 @@ export default function CartPage() {
 
       <main className="cart-page">
         <div className="container" dir="rtl">
-
-          {/* ── Header ── */}
           <header className="cart-page-head">
             <div>
               <p className="cart-kicker">Cart</p>
@@ -92,13 +96,10 @@ export default function CartPage() {
             </div>
           </header>
 
-          {/* ── Error banner ── */}
-          <CartErrorBanner message={hasError ? error : ''} onClose={() => setError('')} />
+          <CartErrorBanner message={errorMessage} onClose={() => setActionError('')} />
 
-          {/* ── Skeleton ── */}
           {loading && <CartSkeleton />}
 
-          {/* ── Empty ── */}
           {isEmpty && (
             <section className="cart-empty-state">
               <span className="cart-empty-icon">🛒</span>
@@ -108,7 +109,6 @@ export default function CartPage() {
             </section>
           )}
 
-          {/* ── Items + Summary ── */}
           {!loading && !isEmpty && (
             <section className="cart-page-grid">
               <div className="cart-items-list">
@@ -128,22 +128,24 @@ export default function CartPage() {
                 subtotal={subtotal}
                 totalDiscount={totalDiscount}
                 finalTotal={finalTotal}
+                couponName={couponName}
                 couponCode={couponCode}
-                onCheckout={() => setError('ربط API الدفع لم يتم بعد.')}
+                couponDiscount={couponDiscount}
+                onCancelCoupon={clearCoupon}
+                onCheckout={() => setActionError('ربط API الدفع لم يتم بعد.')}
                 onClear={clear}
                 disabled={items.length === 0}
               />
             </section>
           )}
-
         </div>
       </main>
 
-      {/* ── Modals ── */}
       <CouponModal
         open={couponOpen}
         onClose={() => setCouponOpen(false)}
         onApply={applyCoupon}
+        onCancelCoupon={clearCoupon}
         initialCode={couponCode}
       />
       <OrderNoteModal

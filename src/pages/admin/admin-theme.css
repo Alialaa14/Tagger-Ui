@@ -521,6 +521,7 @@
 }
 
 .table-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.product-table-actions { flex-direction: column; align-items: stretch; }
 
 .discount-pill {
   display: inline-flex;

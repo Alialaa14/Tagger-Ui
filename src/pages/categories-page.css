@@ -1,0 +1,105 @@
+.categories-page-v2 .categories-filters {
+  grid-template-columns: 2fr minmax(180px, 1fr) auto;
+}
+
+.categories-banner {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-soft);
+  background:
+    radial-gradient(circle at 80% 15%, rgba(74, 222, 128, 0.32), transparent 38%),
+    radial-gradient(circle at 8% 90%, rgba(34, 197, 94, 0.24), transparent 42%),
+    linear-gradient(135deg, #14532d, #16a34a);
+}
+
+.categories-banner__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.38), rgba(15, 23, 42, 0.12));
+}
+
+.categories-banner__inner {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  padding-top: 48px;
+  padding-bottom: 48px;
+  display: grid;
+  gap: 10px;
+}
+
+.categories-banner__eyebrow {
+  margin: 0;
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.categories-banner__inner h1 {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 900;
+}
+
+.categories-banner__inner p {
+  margin: 0;
+  max-width: 700px;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.categories-banner__actions {
+  margin-top: 8px;
+}
+
+.categories-banner__btn {
+  height: 44px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.categories-banner__btn--primary {
+  background: #fff;
+  color: var(--green-700);
+}
+
+.categories-banner__btn--primary:hover {
+  background: var(--green-50);
+}
+
+.categories-grid-v2 {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+@media (max-width: 980px) {
+  .categories-page-v2 .categories-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .categories-page-v2 .categories-filters .category-filter-item--search,
+  .categories-page-v2 .categories-filters .category-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .categories-page-v2 .categories-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .categories-banner__inner {
+    padding-top: 34px;
+    padding-bottom: 34px;
+  }
+}
+

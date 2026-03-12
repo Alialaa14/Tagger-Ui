@@ -7,6 +7,7 @@ import './index.css'
 import './socket'
 import { CartProvider } from './context/CartContext'
 import { AuthProvider } from './context/AuthContext'
+import { CategoriesProvider } from './context/CategoriesContext'
 import store from './store/store'
 
 createRoot(document.getElementById('root')).render(
@@ -14,9 +15,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Provider store={store}>
         <AuthProvider>
-          <CartProvider>
-            <App />
-          </CartProvider>
+          <CategoriesProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </CategoriesProvider>
         </AuthProvider>
       </Provider>
     </BrowserRouter>

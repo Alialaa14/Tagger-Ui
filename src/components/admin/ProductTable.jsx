@@ -47,7 +47,7 @@ export default function ProductTable({ products, categories = [], onEdit, onDele
                   )}
                 </td>
                 <td>
-                  <div className="table-actions">
+                  <div className="table-actions product-table-actions">
                     <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onEdit(product)}>
                       تعديل
                     </button>
@@ -73,7 +73,7 @@ export default function ProductTable({ products, categories = [], onEdit, onDele
               <span className={`discount-pill ${hasDiscount(product.discount) ? '' : 'is-muted'}`}>
                 {hasDiscount(product.discount) ? 'يوجد خصم' : 'بدون خصم'}
               </span>
-              <div className="table-actions">
+              <div className="table-actions product-table-actions">
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onEdit(product)}>
                   تعديل
                 </button>

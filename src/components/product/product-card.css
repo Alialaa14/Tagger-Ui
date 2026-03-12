@@ -256,7 +256,7 @@
 
 .product-actions-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: auto;
   padding-top: 4px;
@@ -479,10 +479,6 @@
 /* ── Responsive ─────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
-  .product-actions-row {
-    grid-template-columns: 1fr;
-  }
-
   .product-price {
     font-size: 16px;
   }

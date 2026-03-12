@@ -45,7 +45,7 @@ export default function Profile() {
       formData.append('city', form.city)
       formData.append('governorate', form.governorate)
       formData.append('address', form.address)
-      if (imageFile) formData.append('image', imageFile)
+      if (imageFile) formData.append('logo', imageFile)
 
       const res = await updateProfile(formData)
       await refreshUser()

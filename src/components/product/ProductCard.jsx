@@ -62,10 +62,12 @@ export default function ProductCard({ product, loading = false }) {
   const heroDiscount = useMemo(() => bestTier(discounts), [discounts])
 
   if (loading) return <ProductCardSkeleton />
-  if (!product) return null
+  if (!product || productId === null) return null
+
 
   async function onAddToCart() {
     clearAddToCartError()
+    
     await addToCartRequest(product)
   }
 

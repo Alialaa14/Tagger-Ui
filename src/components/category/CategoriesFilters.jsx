@@ -1,17 +1,18 @@
-﻿import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
-export default function CategoryFilters({
+export default function CategoriesFilters({
   filters,
   onChange,
   onReset,
   isFiltering = false,
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+
   const sortOptions = useMemo(
     () => [
-      { value: 'price_asc', label: 'السعر من الأقل للأعلى' },
-      { value: 'price_desc', label: 'السعر من الأعلى للأقل' },
       { value: 'newest', label: 'الأحدث' },
+      { value: 'name_asc', label: 'الاسم (أ-ي)' },
+      { value: 'name_desc', label: 'الاسم (ي-أ)' },
     ],
     []
   )
@@ -27,41 +28,15 @@ export default function CategoryFilters({
         {mobileOpen ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
       </button>
 
-      <div className={`category-filters ${mobileOpen ? 'open' : ''}`}>
+      <div className={`category-filters categories-filters ${mobileOpen ? 'open' : ''}`}>
         <label className="category-filter-item category-filter-item--search">
           <span>بحث</span>
           <input
             type="text"
             className="category-filter-control"
-            placeholder="ابحث داخل الفئة..."
+            placeholder="ابحث باسم الفئة أو الوصف..."
             value={filters.search}
             onChange={(e) => onChange('search', e.target.value)}
-          />
-        </label>
-
-        <label className="category-filter-item">
-          <span>أقل سعر</span>
-          <input
-            type="number"
-            className="category-filter-control"
-            min="0"
-            inputMode="numeric"
-            placeholder="0"
-            value={filters.minPrice}
-            onChange={(e) => onChange('minPrice', e.target.value)}
-          />
-        </label>
-
-        <label className="category-filter-item">
-          <span>أعلى سعر</span>
-          <input
-            type="number"
-            className="category-filter-control"
-            min="0"
-            inputMode="numeric"
-            placeholder="1000"
-            value={filters.maxPrice}
-            onChange={(e) => onChange('maxPrice', e.target.value)}
           />
         </label>
 
@@ -72,7 +47,11 @@ export default function CategoryFilters({
             value={filters.sortBy}
             onChange={(e) => onChange('sortBy', e.target.value)}
           >
-            {sortOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            {sortOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -86,3 +65,4 @@ export default function CategoryFilters({
     </section>
   )
 }
+

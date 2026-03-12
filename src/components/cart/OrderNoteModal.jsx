@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 /**
  * OrderNoteModal
@@ -10,6 +10,10 @@ import React, { useState } from 'react'
  */
 export default function OrderNoteModal({ open, onClose, initialValue = '', onSave }) {
   const [note, setNote] = useState(initialValue)
+  useEffect(() => {
+    if (!open) return
+    setNote(initialValue || '')
+  }, [open, initialValue])
 
   if (!open) return null
 

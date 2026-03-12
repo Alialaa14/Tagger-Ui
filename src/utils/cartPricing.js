@@ -31,7 +31,7 @@ export function calculateLinePricing(item) {
   }
 }
 
-export function calculateCartTotals(items, couponMeta) {
+export function calculateCartTotals(items, couponMeta, couponValue = 0) {
   const safeItems = Array.isArray(items) ? items : []
   const lines = safeItems.map((item) => ({ item, pricing: calculateLinePricing(item) }))
 
@@ -44,6 +44,8 @@ export function calculateCartTotals(items, couponMeta) {
     couponDiscount = ((subtotal - itemsDiscount) * (Number(couponMeta.value) || 0)) / 100
   } else if (couponMeta?.type === 'fixed') {
     couponDiscount = Number(couponMeta.value) || 0
+  } else {
+    couponDiscount = Number(couponValue) || 0
   }
 
   couponDiscount = Math.max(0, couponDiscount)
