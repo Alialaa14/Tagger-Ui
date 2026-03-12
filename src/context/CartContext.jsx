@@ -20,12 +20,9 @@ function resolveProductId(productOrId) {
 }
 
 function normalizeCartItem(raw) {
-  // API shape: { product: "ID_or_object", quantity, totalPrice, _id }
-  // product can be a plain ID string OR a populated object
   const productRaw = raw?.product ?? raw?.productData ?? null
   const isProductString = typeof productRaw === 'string'
 
-  // Resolve productId — from explicit field, or from the product object/string
   const resolvedProductId =
     raw?.productId ||
     (isProductString ? productRaw : null) ||
@@ -36,8 +33,6 @@ function normalizeCartItem(raw) {
 
   if (!resolvedProductId) return null
 
-  // If product is an ID-only string with no accompanying name/price data,
-  // this is an unpopulated/ghost item (e.g. from a delete response) — skip it
   if (isProductString && !raw?.name && !raw?.productName && !raw?.unitPrice && !raw?.price) {
     return null
   }
@@ -113,7 +108,6 @@ function normalizeCouponMeta(raw, fallbackValue = null) {
 }
 
 function normalizeCartPayload(payload) {
-  // Support all common response shapes including { updatedCart: {...} }
   const root =
     payload?.updatedCart ||
     payload?.data ||
@@ -121,7 +115,6 @@ function normalizeCartPayload(payload) {
     payload ||
     {}
 
-  // Products array — API uses "products" key
   const itemsRaw =
     root?.products ||
     root?.items ||
@@ -132,22 +125,17 @@ function normalizeCartPayload(payload) {
     []
   const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeCartItem).filter(Boolean) : []
 
-  // Coupon — API returns a populated object: { _id, name, discount, expiry, ... }
-  // or null/undefined when no coupon is applied
   const couponRaw = root?.coupon ?? root?.couponMeta ?? null
   const hasCoupon = couponRaw && typeof couponRaw === 'object'
 
-  // coupon.name is the display name / code (e.g. "FIRST 2")
   const couponName = hasCoupon
     ? String(couponRaw.name || couponRaw.code || '').trim()
     : ''
 
-  // Use name as the code (what the user typed), uppercased
   const couponCode = hasCoupon
     ? String(couponRaw.name || couponRaw.code || couponRaw._id || '').trim().toUpperCase()
     : ''
 
-  // coupon.discount is the fixed discount amount
   const couponValue = hasCoupon
     ? Number(couponRaw.discount ?? couponRaw.value ?? couponRaw.amount ?? 0)
     : 0
@@ -156,14 +144,13 @@ function normalizeCartPayload(payload) {
     ? { type: 'fixed', value: couponValue, id: String(couponRaw._id || ''), expiry: couponRaw.expiry || null }
     : null
 
-  // Note — API uses "note" key
-  const note = String(root?.note || root?.note || '')
+  // FIX: return null when note is absent so hydration never overwrites a saved note with ''
+  const note = root?.note !== undefined && root?.note !== null ? String(root.note) : null
 
   return { items, couponName, couponCode, couponMeta, note, couponValue }
 }
 
 function payloadHasCartItems(payload) {
-  // Support all common response shapes including { updatedCart: {...} }
   const root =
     payload?.updatedCart ||
     payload?.data ||
@@ -202,7 +189,6 @@ export function CartProvider({ children }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const currentUserId = user?._id || user?.id || null
   const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
   const isAdmin = role === 'admin'
   const isCustomer = role === 'customer' || role === 'user'
@@ -229,13 +215,15 @@ export function CartProvider({ children }) {
         couponCode: normalized.couponCode,
         couponMeta: normalized.couponMeta,
         couponValue: normalized.couponValue,
-        note: normalized.note,
+        // FIX: only overwrite note when the backend actually returned one
+        ...(normalized.note !== null ? { note: normalized.note } : {}),
       }))
     } else {
       const normalized = normalizeCartPayload(payload)
       setState((prev) => ({
         ...prev,
         ...(normalized.couponCode !== undefined ? { couponCode: normalized.couponCode } : {}),
+        ...(normalized.couponName !== undefined ? { couponName: normalized.couponName } : {}),
         ...(normalized.note !== undefined ? { note: normalized.note } : {}),
         ...(normalized.couponMeta ? { couponMeta: normalized.couponMeta } : {}),
         ...(Number.isFinite(Number(normalized.couponValue)) ? { couponValue: Number(normalized.couponValue) } : {}),
@@ -323,7 +311,6 @@ export function CartProvider({ children }) {
     setError('')
     const previousState = state
 
-    // Optimistic: remove immediately from UI — this is the source of truth
     setState((prev) => ({
       ...prev,
       items: prev.items.filter((item) => String(item.productId) !== String(productId)),
@@ -334,11 +321,8 @@ export function CartProvider({ children }) {
         `${API_BASE_URL}?productId=${encodeURIComponent(productId)}`,
         { withCredentials: true }
       )
-      // Do NOT hydrate from response — the backend may return unpopulated product
-      // objects for the deleted item. The optimistic state above is already correct.
       return { ok: true }
     } catch (err) {
-      // Revert optimistic removal on failure
       setState(previousState)
       const msg = err?.response?.data?.message || err?.message || 'Failed to remove item from cart.'
       setError(msg)
@@ -352,17 +336,16 @@ export function CartProvider({ children }) {
     setError('')
     const previousState = state
 
-    // Optimistic update for note/coupon fields
+    // FIX: Optimistic update — only update note in local state (no duplicate, correct key)
     setState((prev) => ({
       ...prev,
-      ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
       ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
     }))
 
     try {
+      // FIX: Backend reads `coupon` (not `couponCode`) and `note` from req.body
       const body = {
-        ...(updates.couponCode !== undefined ? { couponCode: String(updates.couponCode) } : {}),
-        ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
+        ...(updates.couponCode !== undefined ? { coupon: String(updates.couponCode) } : {}),
         ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
       }
       const { data } = await axios.patch(API_BASE_URL, body, { withCredentials: true })
@@ -373,7 +356,9 @@ export function CartProvider({ children }) {
         setState((prev) => ({
           ...prev,
           ...(normalized.couponCode !== undefined ? { couponCode: normalized.couponCode } : {}),
-          ...(normalized.note !== undefined ? { note: normalized.note } : {}),
+          ...(normalized.couponName !== undefined ? { couponName: normalized.couponName } : {}),
+          // FIX: only overwrite note when backend returned a real value (not null/absent)
+          ...(normalized.note !== null ? { note: normalized.note } : {}),
           ...(normalized.couponMeta ? { couponMeta: normalized.couponMeta } : {}),
           ...(Number.isFinite(Number(normalized.couponValue)) ? { couponValue: Number(normalized.couponValue) } : {}),
         }))
@@ -387,6 +372,7 @@ export function CartProvider({ children }) {
     }
   }, [ensureUserCartAccess, hydrateFromPayload, state])
 
+  // FIX: applyCoupon passes `couponCode` key, updateCart translates it to `coupon` for the backend
   const applyCoupon = useCallback(async (code) => {
     const normalized = String(code || '').trim().toUpperCase()
     if (!normalized) return { ok: false, message: 'Please enter a coupon code.' }
@@ -400,6 +386,7 @@ export function CartProvider({ children }) {
     setState((prev) => ({ ...prev, couponName: '', couponCode: '', couponMeta: null, couponValue: 0 }))
     setError('')
     try {
+      // Route: DELETE /api/v1/cart/cancel-coupon  ✓ (matches router)
       const { data } = await axios.delete(`${API_BASE_URL}/cancel-coupon`, { withCredentials: true })
       if (payloadHasCartItems(data)) {
         hydrateFromPayload(data)
@@ -425,7 +412,6 @@ export function CartProvider({ children }) {
     return updateCart({ note: String(note || '') })
   }, [updateCart])
 
-  // FIX: Optimistic quantity change so navbar badge updates immediately
   const changeQuantity = useCallback(async (productId, opt) => {
     const access = ensureUserCartAccess()
     if (!access.ok) return access
@@ -433,7 +419,6 @@ export function CartProvider({ children }) {
     const normalizedOpt = opt === 'dec' ? 'dec' : 'inc'
     setError('')
 
-    // Optimistic update: change qty immediately in UI
     setState((prev) => {
       const idx = prev.items.findIndex((item) => String(item.productId) === String(productId))
       if (idx < 0) return prev
@@ -447,7 +432,6 @@ export function CartProvider({ children }) {
     })
 
     try {
-      // Use query params: PUT /cart/change-quantity?productId=...&opt=inc|dec
       const { data } = await axios.put(
         `${API_BASE_URL}/change-quantity?productId=${encodeURIComponent(productId)}&opt=${normalizedOpt}`,
         {},
@@ -456,7 +440,6 @@ export function CartProvider({ children }) {
       hydrateFromPayload(data)
       return { ok: true, data }
     } catch (err) {
-      // Revert optimistic update on failure by re-fetching
       const msg = err?.response?.data?.message || err?.message || 'Failed to change quantity.'
       setError(msg)
       getCart().catch(() => {})
@@ -478,7 +461,6 @@ export function CartProvider({ children }) {
     const times = Math.abs(q - currentQ)
     const opt = q > currentQ ? 'inc' : 'dec'
     for (let i = 0; i < times; i += 1) {
-      // eslint-disable-next-line no-await-in-loop
       result = await changeQuantity(productId, opt)
       if (!result.ok) break
     }
@@ -527,7 +509,9 @@ export function CartProvider({ children }) {
     couponName: state.couponName,
     couponCode: state.couponCode,
     couponValue: state.couponValue,
+    // FIX: expose both `note` and `orderNote` so CartNote and CartPage both work
     note: state.note,
+    orderNote: state.note,
     lineItems: totals.lines,
     couponDiscount: totals.couponDiscount,
     loading,

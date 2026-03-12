@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import './CheckoutPage.css'
+import "./CheckoutPage.extra.css"
 
-/* ── Form field component ─────────────────────────────────────── */
+/* ── Field wrapper ───────────────────────────────────────────── */
 function Field({ label, id, error, children }) {
   return (
     <label className="checkout-field" htmlFor={id}>
@@ -17,7 +18,7 @@ function Field({ label, id, error, children }) {
   )
 }
 
-/* ── Order summary row ────────────────────────────────────────── */
+/* ── Summary row ─────────────────────────────────────────────── */
 function SummaryRow({ label, value, isBold, isGreen, isSave }) {
   return (
     <div className={`checkout-sum-row${isBold ? ' checkout-sum-row-bold' : ''}${isGreen ? ' checkout-sum-row-green' : ''}${isSave ? ' checkout-sum-row-save' : ''}`}>
@@ -27,7 +28,7 @@ function SummaryRow({ label, value, isBold, isGreen, isSave }) {
   )
 }
 
-/* ── Step indicator ───────────────────────────────────────────── */
+/* ── Step indicator ──────────────────────────────────────────── */
 function Steps({ current }) {
   const steps = ['السلة', 'التوصيل', 'تأكيد الطلب']
   return (
@@ -35,21 +36,40 @@ function Steps({ current }) {
       {steps.map((s, i) => (
         <React.Fragment key={s}>
           <div className={`checkout-step${i + 1 === current ? ' checkout-step-active' : ''}${i + 1 < current ? ' checkout-step-done' : ''}`}>
-            <span className="checkout-step-dot">
-              {i + 1 < current ? '✓' : i + 1}
-            </span>
+            <span className="checkout-step-dot">{i + 1 < current ? '✓' : i + 1}</span>
             <span className="checkout-step-label">{s}</span>
           </div>
-          {i < steps.length - 1 && (
-            <span className="checkout-step-line" />
-          )}
+          {i < steps.length - 1 && <span className="checkout-step-line" />}
         </React.Fragment>
       ))}
     </div>
   )
 }
 
-/* ── Main ─────────────────────────────────────────────────────── */
+/* ── Payment option card ─────────────────────────────────────── */
+function PaymentOption({ value, selected, icon, title, subtitle, onChange }) {
+  return (
+    <label className={`checkout-pay-card${selected ? ' checkout-pay-card-active' : ''}`}>
+      <input
+        type="radio"
+        name="paymentMethod"
+        value={value}
+        checked={selected}
+        onChange={() => onChange(value)}
+        className="checkout-payment-radio"
+      />
+      <span className="checkout-pay-icon">{icon}</span>
+      <div className="checkout-pay-text">
+        <span className="checkout-pay-title">{title}</span>
+        {subtitle && <span className="checkout-pay-subtitle">{subtitle}</span>}
+      </div>
+      <span className={`checkout-pay-dot${selected ? ' checkout-pay-dot-active' : ''}`} />
+    </label>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -60,60 +80,90 @@ export default function CheckoutPage() {
     totalDiscount,
     finalTotal,
     couponCode,
-    orderNote,
+    couponDiscount,
+    note,
     clear,
   } = useCart()
 
-  const role = String(user?.role || user?.accountType || '').toLowerCase()
-  const isCustomer = role === 'customer'
-
   const [form, setForm] = useState({
-    fullName: '',
-    phone: '',
-    address: '',
-    city: '',
-    notes: orderNote || '',
+    username:      '',
+    shopName:      '',
+    phoneNumber:   '',
+    governorate:   '',
+    city:          '',
+    address:       '',
+    notes:         '',
     paymentMethod: 'cash',
   })
-  const [errors, setErrors] = useState({})
+
+  // Track which fields were manually changed so we can show the ↺ reset button
+  const [edited, setEdited]       = useState({})
+  const [errors, setErrors]       = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Pre-fill from user profile once available
+  useEffect(() => {
+    if (!user) return
+    setForm((prev) => ({
+      ...prev,
+      username:    user.username    || '',
+      shopName:    user.shopName    || '',
+      phoneNumber: user.phoneNumber || '',
+      governorate: user.governorate || '',
+      city:        user.city        || '',
+      address:     user.address     || '',
+      notes:       note             || '',
+    }))
+  }, [user, note])
 
   function change(field) {
     return (e) => {
       setForm((f) => ({ ...f, [field]: e.target.value }))
+      setEdited((ed) => ({ ...ed, [field]: true }))
       setErrors((err) => ({ ...err, [field]: '' }))
     }
   }
 
+  // Revert a field to the original user profile value
+  function resetField(field) {
+    const original = {
+      username:    user?.username    || '',
+      shopName:    user?.shopName    || '',
+      phoneNumber: user?.phoneNumber || '',
+      governorate: user?.governorate || '',
+      city:        user?.city        || '',
+      address:     user?.address     || '',
+    }
+    setForm((f) => ({ ...f, [field]: original[field] ?? '' }))
+    setEdited((ed) => ({ ...ed, [field]: false }))
+    setErrors((err) => ({ ...err, [field]: '' }))
+  }
+
   function validate() {
     const e = {}
-    if (!form.fullName.trim()) e.fullName = 'الاسم مطلوب'
-    if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب'
-    else if (!/^[0-9+\s]{8,15}$/.test(form.phone.trim())) e.phone = 'رقم الهاتف غير صحيح'
-    if (!form.address.trim()) e.address = 'العنوان مطلوب'
-    if (!form.city.trim()) e.city = 'المدينة مطلوبة'
+    if (!form.username.trim())    e.username    = 'الاسم مطلوب'
+    if (!form.phoneNumber.trim()) e.phoneNumber = 'رقم الهاتف مطلوب'
+    else if (!/^01[0-9]{9}$/.test(form.phoneNumber.trim())) e.phoneNumber = 'رقم الهاتف غير صحيح (01xxxxxxxxx)'
+    if (!form.governorate.trim()) e.governorate = 'المحافظة مطلوبة'
+    if (!form.city.trim())        e.city        = 'المدينة مطلوبة'
+    if (!form.address.trim())     e.address     = 'العنوان مطلوب'
     return e
   }
 
   async function handleSubmit() {
     const e = validate()
-    if (Object.keys(e).length) {
-      setErrors(e)
-      return
-    }
-
+    if (Object.keys(e).length) { setErrors(e); return }
     setIsSubmitting(true)
     // 🔌 Wire your API order creation here:
     // await createOrder({ ...form, items: lineItems, total: finalTotal, coupon: couponCode })
-    await new Promise((res) => setTimeout(res, 900)) // placeholder delay
-
+    await new Promise((res) => setTimeout(res, 900))
     clear()
     setSubmitted(true)
     setIsSubmitting(false)
   }
 
-  /* ── Submitted confirmation ── */
+  /* ── Success screen ────────────────────────────────────────── */
   if (submitted) {
     return (
       <div className="home-page">
@@ -133,25 +183,7 @@ export default function CheckoutPage() {
     )
   }
 
-  /* ── Guard: not customer ── */
-  if (!isCustomer) {
-    return (
-      <div className="home-page">
-        <Navbar />
-        <main className="container checkout-guard" dir="rtl">
-          <div className="checkout-confirm-card">
-            <div className="checkout-confirm-icon">🔒</div>
-            <h2>هذه الصفحة للعملاء فقط</h2>
-            <p>يجب تسجيل الدخول كعميل لإتمام الطلب.</p>
-            <Link to="/login" className="btn btn-primary">تسجيل الدخول</Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
-  /* ── Guard: empty cart ── */
+  /* ── Empty cart guard ──────────────────────────────────────── */
   if (lineItems.length === 0) {
     return (
       <div className="home-page">
@@ -169,6 +201,7 @@ export default function CheckoutPage() {
     )
   }
 
+  /* ── Main page ─────────────────────────────────────────────── */
   return (
     <div className="home-page">
       <Navbar />
@@ -182,9 +215,11 @@ export default function CheckoutPage() {
         <Steps current={2} />
 
         <div className="checkout-layout">
-          {/* ── Left: form ── */}
+
+          {/* ══ Left col: form ══════════════════════════════════ */}
           <div className="checkout-form-col">
-            {/* Delivery */}
+
+            {/* Delivery details */}
             <div className="checkout-card">
               <h2 className="checkout-card-title">
                 <span className="checkout-card-icon">📍</span>
@@ -192,51 +227,111 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="checkout-form-grid">
-                <Field label="الاسم الكامل" id="fullName" error={errors.fullName}>
-                  <input
-                    id="fullName"
-                    className={`checkout-input${errors.fullName ? ' checkout-input-error' : ''}`}
-                    value={form.fullName}
-                    onChange={change('fullName')}
-                    placeholder="مثال: أحمد محمد"
-                    dir="rtl"
-                  />
+
+                {/* Name */}
+                <Field label="الاسم" id="username" error={errors.username}>
+                  <div className="checkout-input-wrap">
+                    <input
+                      id="username"
+                      className={`checkout-input${errors.username ? ' checkout-input-error' : ''}`}
+                      value={form.username}
+                      onChange={change('username')}
+                      placeholder="اسمك الكامل"
+                      dir="rtl"
+                    />
+                    {edited.username && (
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('username')} title="استعادة القيمة الأصلية">↺</button>
+                    )}
+                  </div>
                 </Field>
 
-                <Field label="رقم الهاتف" id="phone" error={errors.phone}>
-                  <input
-                    id="phone"
-                    className={`checkout-input${errors.phone ? ' checkout-input-error' : ''}`}
-                    value={form.phone}
-                    onChange={change('phone')}
-                    placeholder="01xxxxxxxxx"
-                    dir="ltr"
-                    inputMode="tel"
-                  />
+                {/* Phone */}
+                <Field label="رقم الهاتف" id="phoneNumber" error={errors.phoneNumber}>
+                  <div className="checkout-input-wrap">
+                    <input
+                      id="phoneNumber"
+                      className={`checkout-input${errors.phoneNumber ? ' checkout-input-error' : ''}`}
+                      value={form.phoneNumber}
+                      onChange={change('phoneNumber')}
+                      placeholder="01xxxxxxxxx"
+                      dir="ltr"
+                      inputMode="tel"
+                    />
+                    {edited.phoneNumber && (
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('phoneNumber')} title="استعادة القيمة الأصلية">↺</button>
+                    )}
+                  </div>
                 </Field>
 
-                <Field label="العنوان بالتفصيل" id="address" error={errors.address}>
-                  <input
-                    id="address"
-                    className={`checkout-input checkout-input-full${errors.address ? ' checkout-input-error' : ''}`}
-                    value={form.address}
-                    onChange={change('address')}
-                    placeholder="الشارع، رقم البناية، الدور، الشقة"
-                    dir="rtl"
-                  />
+                {/* Shop name — full width */}
+                <Field label="اسم المتجر" id="shopName">
+                  <div className="checkout-input-wrap checkout-input-full">
+                    <input
+                      id="shopName"
+                      className="checkout-input"
+                      value={form.shopName}
+                      onChange={change('shopName')}
+                      placeholder="اسم متجرك"
+                      dir="rtl"
+                    />
+                    {edited.shopName && (
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('shopName')} title="استعادة القيمة الأصلية">↺</button>
+                    )}
+                  </div>
                 </Field>
 
+                {/* Governorate */}
+                <Field label="المحافظة" id="governorate" error={errors.governorate}>
+                  <div className="checkout-input-wrap">
+                    <input
+                      id="governorate"
+                      className={`checkout-input${errors.governorate ? ' checkout-input-error' : ''}`}
+                      value={form.governorate}
+                      onChange={change('governorate')}
+                      placeholder="مثال: القاهرة"
+                      dir="rtl"
+                    />
+                    {edited.governorate && (
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('governorate')} title="استعادة القيمة الأصلية">↺</button>
+                    )}
+                  </div>
+                </Field>
+
+                {/* City */}
                 <Field label="المدينة / المنطقة" id="city" error={errors.city}>
-                  <input
-                    id="city"
-                    className={`checkout-input${errors.city ? ' checkout-input-error' : ''}`}
-                    value={form.city}
-                    onChange={change('city')}
-                    placeholder="مثال: القاهرة"
-                    dir="rtl"
-                  />
+                  <div className="checkout-input-wrap">
+                    <input
+                      id="city"
+                      className={`checkout-input${errors.city ? ' checkout-input-error' : ''}`}
+                      value={form.city}
+                      onChange={change('city')}
+                      placeholder="مثال: مدينة نصر"
+                      dir="rtl"
+                    />
+                    {edited.city && (
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('city')} title="استعادة القيمة الأصلية">↺</button>
+                    )}
+                  </div>
                 </Field>
 
+                {/* Address — full width */}
+                <Field label="العنوان بالتفصيل" id="address" error={errors.address}>
+                  <div className="checkout-input-wrap checkout-input-full">
+                    <input
+                      id="address"
+                      className={`checkout-input${errors.address ? ' checkout-input-error' : ''}`}
+                      value={form.address}
+                      onChange={change('address')}
+                      placeholder="الشارع، رقم البناية، الدور، الشقة"
+                      dir="rtl"
+                    />
+                    {edited.address && (
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('address')} title="استعادة القيمة الأصلية">↺</button>
+                    )}
+                  </div>
+                </Field>
+
+                {/* Extra notes — full width */}
                 <Field label="ملاحظات إضافية (اختياري)" id="notes">
                   <textarea
                     id="notes"
@@ -248,7 +343,12 @@ export default function CheckoutPage() {
                     dir="rtl"
                   />
                 </Field>
+
               </div>
+
+              <p className="checkout-prefill-note">
+                ✏️ البيانات محمّلة تلقائياً من حسابك — يمكنك تعديل أي حقل لهذا الطلب، واضغط ↺ للعودة للقيمة الأصلية.
+              </p>
             </div>
 
             {/* Payment method */}
@@ -259,34 +359,40 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="checkout-payment-options">
-                {[
-                  { value: 'cash', label: 'الدفع عند الاستلام', icon: '💵' },
-                  { value: 'transfer', label: 'تحويل بنكي', icon: '🏦' },
-                ].map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`checkout-payment-option${form.paymentMethod === opt.value ? ' checkout-payment-option-active' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={opt.value}
-                      checked={form.paymentMethod === opt.value}
-                      onChange={change('paymentMethod')}
-                      className="checkout-payment-radio"
-                    />
-                    <span className="checkout-payment-icon">{opt.icon}</span>
-                    <span className="checkout-payment-label">{opt.label}</span>
-                    {form.paymentMethod === opt.value && (
-                      <span className="checkout-payment-check">✓</span>
-                    )}
-                  </label>
-                ))}
+                <PaymentOption
+                  value="cash"
+                  selected={form.paymentMethod === 'cash'}
+                  icon="💵"
+                  title="الدفع عند الاستلام"
+                  subtitle="ادفع نقداً عند وصول طلبك إليك"
+                  onChange={(v) => setForm((f) => ({ ...f, paymentMethod: v }))}
+                />
+                <PaymentOption
+                  value="wallet"
+                  selected={form.paymentMethod === 'wallet'}
+                  icon="📲"
+                  title="المحفظة الرقمية"
+                  subtitle="فودافون كاش · اورنج كاش · إتصالات كاش"
+                  onChange={(v) => setForm((f) => ({ ...f, paymentMethod: v }))}
+                />
               </div>
+
+              {form.paymentMethod === 'wallet' && (
+                <div className="checkout-wallet-info">
+                  <span className="checkout-wallet-info-icon">📋</span>
+                  <div>
+                    <p className="checkout-wallet-info-title">تعليمات الدفع بالمحفظة</p>
+                    <p className="checkout-wallet-info-body">
+                      بعد تأكيد الطلب سيتم إرسال رقم المحفظة إليك عبر رسالة نصية.
+                      يُرجى إرسال المبلغ وإرفاق صورة الإيصال.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ── Right: summary ── */}
+          {/* ══ Right col: order summary ═════════════════════════ */}
           <div className="checkout-summary-col">
             <div className="checkout-card checkout-summary-card">
               <h2 className="checkout-card-title">
@@ -294,18 +400,17 @@ export default function CheckoutPage() {
                 ملخص الطلب
               </h2>
 
-              {/* Items */}
               <ul className="checkout-items-list">
                 {lineItems.map((line) => (
                   <li key={line.item.productId} className="checkout-item-row">
                     <div className="checkout-item-info">
-                      <span className="checkout-item-name line-clamp-2">
-                        {line.product?.name || line.item.productId}
+                      <span className="checkout-item-name">
+                        {line.item?.name || line.product?.name || 'منتج'}
                       </span>
                       <span className="checkout-item-qty">× {line.item.quantity}</span>
                     </div>
                     <span className="checkout-item-total">
-                      {line.lineTotal?.toFixed(2) ?? '—'} ج.م
+                      {(line.lineTotal ?? line.item.unitPrice * line.item.quantity)?.toFixed(2)} ج.م
                     </span>
                   </li>
                 ))}
@@ -313,14 +418,33 @@ export default function CheckoutPage() {
 
               <div className="checkout-sum-divider" />
 
-              <SummaryRow label={`المجموع الفرعي (${totalQuantity} قطعة)`} value={`${subtotal?.toFixed(2)} ج.م`} />
+              <SummaryRow
+                label={`المجموع الفرعي (${totalQuantity} قطعة)`}
+                value={`${subtotal?.toFixed(2)} ج.م`}
+              />
+
               {totalDiscount > 0 && (
-                <SummaryRow label="إجمالي الخصم" value={`-${totalDiscount?.toFixed(2)} ج.م`} isSave />
+                <SummaryRow
+                  label="خصم الكمية"
+                  value={`- ${totalDiscount?.toFixed(2)} ج.م`}
+                  isSave
+                />
               )}
+
               {couponCode && (
                 <div className="checkout-coupon-applied">
-                  <span>🏷️ كوبون مطبّق</span>
-                  <span className="checkout-coupon-code">{couponCode}</span>
+                  <span>🏷️ كوبون: <strong>{couponCode}</strong></span>
+                  {couponDiscount > 0 && (
+                    <span className="checkout-coupon-code">- {couponDiscount?.toFixed(2)} ج.م</span>
+                  )}
+                </div>
+              )}
+
+              {/* Cart note */}
+              {note && note.trim() && (
+                <div className="checkout-order-note">
+                  <span className="checkout-order-note-icon">📝</span>
+                  <span>{note}</span>
                 </div>
               )}
 
@@ -333,23 +457,25 @@ export default function CheckoutPage() {
                 isGreen
               />
 
+              {/* Active payment method badge */}
+              <div className="checkout-pay-badge">
+                {form.paymentMethod === 'cash'
+                  ? <><span>💵</span> الدفع عند الاستلام</>
+                  : <><span>📲</span> المحفظة الرقمية</>}
+              </div>
+
               <button
                 className="checkout-submit-btn"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <span className="checkout-spinner" />
-                ) : (
-                  'تأكيد الطلب →'
-                )}
+                {isSubmitting ? <span className="checkout-spinner" /> : 'تأكيد الطلب →'}
               </button>
 
-              <Link to="/cart" className="checkout-back-link">
-                ← العودة إلى السلة
-              </Link>
+              <Link to="/cart" className="checkout-back-link">← العودة إلى السلة</Link>
             </div>
           </div>
+
         </div>
       </main>
 
