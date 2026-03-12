@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CartItemCard from '../components/cart/CartItemCard'
 import CartSummaryCard from '../components/cart/CartSummaryCard'
+import CartNote from '../components/cart/CartNote'
 import CouponModal from '../components/cart/CouponModal'
-import OrderNoteModal from '../components/cart/OrderNoteModal'
 import CartSkeleton from '../components/cart/CartSkeleton'
 import CartErrorBanner from '../components/cart/CartErrorBanner'
 import './cart.css'
 
 export default function CartPage() {
+  const navigate = useNavigate()
   const { user, loading: authLoading } = useAuth()
   const {
     items,
@@ -39,7 +40,6 @@ export default function CartPage() {
 
   const [actionError, setActionError] = useState('')
   const [couponOpen, setCouponOpen] = useState(false)
-  const [noteOpen, setNoteOpen] = useState(false)
 
   const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
   const isCustomer = role === 'user' || role === 'customer'
@@ -55,6 +55,55 @@ export default function CartPage() {
   const isEmpty = !loading && items.length === 0
   const errorMessage = useMemo(() => actionError || cartError || '', [actionError, cartError])
 
+  // ── Handlers ──────────────────────────────────────────────────
+
+  async function handleIncrement(productId) {
+    const result = await increment(productId)
+    if (result && !result.ok) setActionError(result.message || 'فشل تغيير الكمية')
+  }
+
+  async function handleDecrement(productId) {
+    const result = await decrement(productId)
+    if (result && !result.ok) setActionError(result.message || 'فشل تغيير الكمية')
+  }
+
+  async function handleRemove(productId) {
+    const result = await removeItem(productId)
+    if (result && !result.ok) setActionError(result.message || 'فشل حذف المنتج')
+  }
+
+  async function handleApplyCoupon(code) {
+    setActionError('')
+    const result = await applyCoupon(code)
+    if (result && !result.ok) setActionError(result.message || 'كود الكوبون غير صحيح')
+    return result
+  }
+
+  async function handleCancelCoupon() {
+    setActionError('')
+    const result = await clearCoupon()
+    if (result && !result.ok) setActionError(result.message || 'فشل إلغاء الكوبون')
+    return result
+  }
+
+  async function handleSaveNote(note) {
+    setActionError('')
+    const result = await setOrderNote(note)
+    if (result && !result.ok) setActionError(result.message || 'فشل حفظ الملاحظة')
+  }
+
+  async function handleClear() {
+    setActionError('')
+    const result = await clear()
+    if (result && !result.ok) setActionError(result.message || 'فشل إفراغ السلة')
+  }
+
+  function handleCheckout() {
+    if (items.length === 0) return
+    navigate('/checkout')
+  }
+
+  // ── Not a customer ────────────────────────────────────────────
   if (!authLoading && !isCustomer) {
     return (
       <div className="home-page">
@@ -88,10 +137,7 @@ export default function CartPage() {
             </div>
             <div className="cart-head-actions">
               <button type="button" className="btn btn-ghost" onClick={() => setCouponOpen(true)}>
-                🏷️ كوبون
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={() => setNoteOpen(true)}>
-                📝 ملاحظة
+                🏷️ {couponCode ? `كوبون: ${couponCode}` : 'كوبون'}
               </button>
             </div>
           </header>
@@ -111,16 +157,21 @@ export default function CartPage() {
 
           {!loading && !isEmpty && (
             <section className="cart-page-grid">
-              <div className="cart-items-list">
-                {lineItems.map((line) => (
-                  <CartItemCard
-                    key={line.item.productId}
-                    line={line}
-                    onIncrement={increment}
-                    onDecrement={decrement}
-                    onRemove={removeItem}
-                  />
-                ))}
+              <div className="cart-items-col">
+                <div className="cart-items-list">
+                  {lineItems.map((line) => (
+                    <CartItemCard
+                      key={line.item.productId}
+                      line={line}
+                      onIncrement={handleIncrement}
+                      onDecrement={handleDecrement}
+                      onRemove={handleRemove}
+                    />
+                  ))}
+                </div>
+
+                {/* Single note component: write → save to API → display */}
+                <CartNote />
               </div>
 
               <CartSummaryCard
@@ -131,9 +182,9 @@ export default function CartPage() {
                 couponName={couponName}
                 couponCode={couponCode}
                 couponDiscount={couponDiscount}
-                onCancelCoupon={clearCoupon}
-                onCheckout={() => setActionError('ربط API الدفع لم يتم بعد.')}
-                onClear={clear}
+                onCancelCoupon={handleCancelCoupon}
+                onCheckout={handleCheckout}
+                onClear={handleClear}
                 disabled={items.length === 0}
               />
             </section>
@@ -141,18 +192,13 @@ export default function CartPage() {
         </div>
       </main>
 
+      {/* Coupon Modal */}
       <CouponModal
         open={couponOpen}
         onClose={() => setCouponOpen(false)}
-        onApply={applyCoupon}
-        onCancelCoupon={clearCoupon}
+        onApply={handleApplyCoupon}
+        onCancelCoupon={handleCancelCoupon}
         initialCode={couponCode}
-      />
-      <OrderNoteModal
-        open={noteOpen}
-        onClose={() => setNoteOpen(false)}
-        initialValue={orderNote}
-        onSave={setOrderNote}
       />
 
       <Footer />

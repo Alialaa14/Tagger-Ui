@@ -1,0 +1,126 @@
+/* ══════════════════════════════════════════
+   CART NOTE  — append to cart.css
+══════════════════════════════════════════ */
+
+.cart-note {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid rgba(22, 163, 74, 0.15);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.cart-note__label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cart-note__textarea {
+  width: 100%;
+  min-height: 88px;
+  border: 1.5px solid rgba(22, 163, 74, 0.20);
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  color: #1e293b;
+  resize: vertical;
+  background: #f8fafc;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.cart-note__textarea:focus {
+  border-color: #22c55e;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.10);
+}
+
+.cart-note__textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cart-note__textarea::placeholder {
+  color: #94a3b8;
+}
+
+.cart-note__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cart-note__count {
+  font-size: 11px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-note__save {
+  padding: 7px 20px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #fff;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.cart-note__save:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.cart-note__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cart-note__error {
+  margin: 0;
+  font-size: 12px;
+  color: #dc2626;
+}
+
+/* The saved note display — appears after successful save */
+.cart-note__display {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid rgba(22, 163, 74, 0.10);
+  padding-top: 12px;
+  animation: cartNoteIn 280ms ease;
+}
+
+@keyframes cartNoteIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cart-note__display-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cart-note__display-text {
+  margin: 0;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -44,7 +44,7 @@ function roleBadgeClass(role) {
 
 /* ── User dropdown panel ────────────────────────────────────── */
 function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose, logout, navigate }) {
-  const imageSrc   = user?.logo?.url || user?.logo || user?.avatar || user?.logo.url || ''
+  const imageSrc   = user?.logo?.url || user?.logo || user?.avatar || user?.logo?.url || ''
   const userName   = user?.username  || user?.name  || user?.shopName || 'المستخدم'
   const city       = user?.city       || ''
   const governorate = user?.governorate || ''

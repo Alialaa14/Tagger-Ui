@@ -3,28 +3,40 @@ import React, { useEffect, useState } from 'react'
 /**
  * CouponModal
  * Props:
- *   open         — bool
- *   onClose      — () => void
- *   onApply      — (code: string) => void
- *   initialCode  — string
+ *   open            — bool
+ *   onClose         — () => void
+ *   onApply         — async (code: string) => { ok, message }
+ *   onCancelCoupon  — async () => { ok }
+ *   initialCode     — string (if set, coupon is already applied)
  */
 export default function CouponModal({ open, onClose, onApply, onCancelCoupon, initialCode = '' }) {
-  const [code, setCode] = useState(initialCode)
+  const [code, setCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [localError, setLocalError] = useState('')
 
   useEffect(() => {
     if (!open) return
-    setCode(initialCode || '')
-  }, [open, initialCode])
+    setCode('')
+    setLocalError('')
+  }, [open])
 
   if (!open) return null
 
   async function handleApply() {
-    if (!code.trim()) return
+    const trimmed = code.trim().toUpperCase()
+    if (!trimmed) {
+      setLocalError('يرجى إدخال كود الكوبون.')
+      return
+    }
     setSubmitting(true)
+    setLocalError('')
     try {
-      const result = await onApply(code.trim().toUpperCase())
-      if (result?.ok !== false) onClose()
+      const result = await onApply(trimmed)
+      if (result?.ok === false) {
+        setLocalError(result.message || 'كود الكوبون غير صحيح.')
+      } else {
+        onClose()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -33,11 +45,14 @@ export default function CouponModal({ open, onClose, onApply, onCancelCoupon, in
   async function handleCancelCoupon() {
     if (!onCancelCoupon) return
     setSubmitting(true)
+    setLocalError('')
     try {
       const result = await onCancelCoupon()
       if (result?.ok !== false) {
         setCode('')
         onClose()
+      } else {
+        setLocalError(result.message || 'فشل إلغاء الكوبون.')
       }
     } finally {
       setSubmitting(false)
@@ -62,9 +77,13 @@ export default function CouponModal({ open, onClose, onApply, onCancelCoupon, in
         <div className="cart-modal-head">
           <div>
             <h3 id="coupon-modal-title">🏷️ كوبون الخصم</h3>
-            <p>أدخل كود الكوبون للحصول على خصم إضافي على طلبك.</p>
+            <p>
+              {initialCode
+                ? `الكوبون المطبّق حالياً: ${initialCode}`
+                : 'أدخل كود الكوبون للحصول على خصم إضافي على طلبك.'}
+            </p>
           </div>
-          <button className="cart-modal-close" onClick={onClose} aria-label="إغلاق">✕</button>
+          <button className="cart-modal-close" onClick={onClose} aria-label="إغلاق" disabled={submitting}>✕</button>
         </div>
 
         {/* Input + apply */}
@@ -72,27 +91,88 @@ export default function CouponModal({ open, onClose, onApply, onCancelCoupon, in
           <input
             className="cart-modal-input"
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => { setCode(e.target.value); setLocalError('') }}
             onKeyDown={handleKey}
-            placeholder="EXAMPLE10"
+            placeholder={initialCode ? 'أدخل كوبوناً جديداً…' : 'EXAMPLE10'}
             dir="ltr"
             autoFocus
             autoComplete="off"
             spellCheck={false}
+            disabled={submitting}
           />
-          <button className="cart-modal-apply-btn" onClick={handleApply} disabled={submitting}>
-            {submitting ? '...' : 'تطبيق'}
+          <button
+            type="button"
+            className="cart-modal-apply-btn"
+            onClick={handleApply}
+            disabled={submitting}
+            style={{
+              padding: '0 18px',
+              minHeight: 44,
+              borderRadius: 11,
+              border: 'none',
+              background: '#16a34a',
+              color: '#fff',
+              fontFamily: 'Cairo, sans-serif',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              opacity: submitting ? 0.7 : 1,
+            }}
+          >
+            {submitting ? 'جاري التطبيق…' : 'تطبيق الكوبون'}
           </button>
         </div>
 
-        {/* Cancel */}
-        <div className="cart-modal-actions">
+        {/* Error message */}
+        {localError && (
+          <p style={{ color: '#dc2626', fontSize: 13, margin: 0, fontWeight: 600 }}>
+            ⚠️ {localError}
+          </p>
+        )}
+
+        {/* Cancel coupon / close */}
+        <div className="cart-modal-actions" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           {initialCode && (
-            <button className="btn btn-ghost" onClick={handleCancelCoupon} type="button" disabled={submitting}>
-              إلغاء الكوبون
+            <button
+              type="button"
+              onClick={handleCancelCoupon}
+              disabled={submitting}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 10,
+                border: '1.5px solid rgba(220,38,38,0.3)',
+                background: '#fff1f2',
+                color: '#dc2626',
+                fontFamily: 'Cairo, sans-serif',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.7 : 1,
+              }}
+            >
+              🗑️ إلغاء الكوبون
             </button>
           )}
-          <button className="btn btn-ghost" onClick={onClose} type="button">إلغاء</button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 10,
+              border: '1.5px solid #e2e8f0',
+              background: '#f8fafc',
+              color: '#475569',
+              fontFamily: 'Cairo, sans-serif',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            إغلاق
+          </button>
         </div>
       </div>
     </div>

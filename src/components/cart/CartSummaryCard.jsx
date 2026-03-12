@@ -1,18 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
-/**
- * CartSummaryCard
- * Props:
- *   totalQuantity  - number
- *   subtotal       - number
- *   totalDiscount  - number
- *   finalTotal     - number
- *   couponCode     - string | null
- *   onCheckout     - () => void
- *   onClear        - () => void
- *   disabled       - bool
- */
 export default function CartSummaryCard({
   totalQuantity = 0,
   subtotal = 0,
@@ -21,9 +9,11 @@ export default function CartSummaryCard({
   couponName = null,
   couponCode = null,
   couponDiscount = 0,
+  orderNote = '',
   onCancelCoupon,
   onCheckout,
   onClear,
+  onEditNote,       // () => void  — scrolls to / focuses the CartNoteCard editor
   disabled = false,
 }) {
   const navigate = useNavigate()
@@ -33,6 +23,8 @@ export default function CartSummaryCard({
     else navigate('/checkout')
   }
 
+  const hasNote = orderNote && orderNote.trim().length > 0
+
   return (
     <aside className="cart-summary-card" aria-label="ملخص الطلب" dir="rtl">
       <h2 className="cart-summary-title">
@@ -40,11 +32,13 @@ export default function CartSummaryCard({
         ملخص الطلب
       </h2>
 
+      {/* Subtotal */}
       <div className="cart-sum-row">
         <span>المجموع الفرعي ({totalQuantity} قطعة)</span>
         <span>{Number(subtotal).toFixed(2)} ج.م</span>
       </div>
 
+      {/* Discount */}
       {totalDiscount > 0 && (
         <div className="cart-sum-row cart-sum-row-save">
           <span>إجمالي الخصم</span>
@@ -52,6 +46,7 @@ export default function CartSummaryCard({
         </div>
       )}
 
+      {/* Coupon tag */}
       {couponCode && (
         <div className="cart-coupon-tag">
           <div className="cart-coupon-tag-left">
@@ -71,8 +66,10 @@ export default function CartSummaryCard({
         </div>
       )}
 
+    
       <div className="cart-summary-divider" />
 
+      {/* Final total */}
       <div className="cart-sum-row cart-sum-row-bold cart-sum-row-green">
         <span>الإجمالي النهائي</span>
         <span>{Number(finalTotal).toFixed(2)} ج.م</span>

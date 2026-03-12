@@ -10,7 +10,7 @@ const EMPTY_CART_STATE = {
   couponName: '',
   couponCode: '',
   couponMeta: null,
-  orderNote: '',
+  note: '',
   couponValue: 0,
 }
 
@@ -20,26 +20,53 @@ function resolveProductId(productOrId) {
 }
 
 function normalizeCartItem(raw) {
-  const product = raw?.product || raw?.productData || raw
+  // API shape: { product: "ID_or_object", quantity, totalPrice, _id }
+  // product can be a plain ID string OR a populated object
+  const productRaw = raw?.product ?? raw?.productData ?? null
+  const isProductString = typeof productRaw === 'string'
+
+  // Resolve productId — from explicit field, or from the product object/string
   const resolvedProductId =
     raw?.productId ||
-    product?._id ||
-    product?.id ||
-    product?.image?.public_id ||
-    product?.name
+    (isProductString ? productRaw : null) ||
+    productRaw?._id ||
+    productRaw?.id ||
+    productRaw?.image?.public_id ||
+    null
+
   if (!resolvedProductId) return null
 
+  // If product is an ID-only string with no accompanying name/price data,
+  // this is an unpopulated/ghost item (e.g. from a delete response) — skip it
+  if (isProductString && !raw?.name && !raw?.productName && !raw?.unitPrice && !raw?.price) {
+    return null
+  }
+
   const productId = String(resolvedProductId)
+
+  const name = isProductString
+    ? (raw?.name || raw?.productName || 'منتج')
+    : (productRaw?.name || raw?.name || 'منتج')
+
+  const imageUrl = isProductString
+    ? (raw?.imageUrl || raw?.image || '')
+    : (productRaw?.image?.url || productRaw?.image || raw?.imageUrl || '')
+
+  const unitPrice = isProductString
+    ? Number(raw?.unitPrice ?? raw?.price ?? raw?.totalPrice ?? 0)
+    : Number(raw?.unitPrice ?? productRaw?.price ?? raw?.price ?? 0)
+
   return {
     productId,
-    name: product?.name || raw?.name || 'Unknown product',
-    imageUrl: product?.image?.url || product?.image || raw?.imageUrl || '',
-    unitPrice: Number(raw?.unitPrice ?? product?.price ?? 0),
+    name,
+    imageUrl,
+    unitPrice,
     quantity: Math.max(1, Number(raw?.quantity ?? raw?.qty ?? 1)),
+    lineTotalFromApi: Number(raw?.totalPrice ?? 0),
     discounts: Array.isArray(raw?.discounts)
       ? raw.discounts
-      : Array.isArray(product?.discount)
-      ? product.discount
+      : Array.isArray(productRaw?.discount)
+      ? productRaw.discount
       : [],
   }
 }
@@ -86,140 +113,157 @@ function normalizeCouponMeta(raw, fallbackValue = null) {
 }
 
 function normalizeCartPayload(payload) {
-  const root = payload?.data || payload?.cart || payload || {}
+  // Support all common response shapes including { updatedCart: {...} }
+  const root =
+    payload?.updatedCart ||
+    payload?.data ||
+    payload?.cart ||
+    payload ||
+    {}
+
+  // Products array — API uses "products" key
   const itemsRaw =
-    root?.items ||
     root?.products ||
+    root?.items ||
     root?.cartItems ||
-    root?.data?.items ||
     root?.data?.products ||
+    root?.data?.items ||
     root?.data?.cartItems ||
     []
   const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeCartItem).filter(Boolean) : []
-  const couponRaw = root?.coupon || root?.couponMeta || null
-  const couponName = String(
-    root?.couponName ||
-      root?.coupon?.name ||
-      root?.coupon?.code ||
-      root?.couponCode ||
-      (typeof root?.coupon === 'string' ? root.coupon : '')
-  ).trim()
-  const couponCode = String(root?.couponCode || root?.coupon?.code || couponName).trim().toUpperCase()
-  const couponValue = Number(
-    root?.coupon?.discount ??
-      root?.coupon?.value ??
-      root?.coupon?.amount ??
-      root?.couponDiscount ??
-      root?.couponValue ??
-      0
-  )
-  const couponMeta = normalizeCouponMeta(couponRaw, couponValue)
-  const orderNote = String(root?.orderNote || root?.note || '')
-  console.log(`Cart payload:`, { items, couponName, couponCode, couponMeta, orderNote, couponValue })
-  return { items, couponName, couponCode, couponMeta, orderNote, couponValue }
+
+  // Coupon — API returns a populated object: { _id, name, discount, expiry, ... }
+  // or null/undefined when no coupon is applied
+  const couponRaw = root?.coupon ?? root?.couponMeta ?? null
+  const hasCoupon = couponRaw && typeof couponRaw === 'object'
+
+  // coupon.name is the display name / code (e.g. "FIRST 2")
+  const couponName = hasCoupon
+    ? String(couponRaw.name || couponRaw.code || '').trim()
+    : ''
+
+  // Use name as the code (what the user typed), uppercased
+  const couponCode = hasCoupon
+    ? String(couponRaw.name || couponRaw.code || couponRaw._id || '').trim().toUpperCase()
+    : ''
+
+  // coupon.discount is the fixed discount amount
+  const couponValue = hasCoupon
+    ? Number(couponRaw.discount ?? couponRaw.value ?? couponRaw.amount ?? 0)
+    : 0
+
+  const couponMeta = hasCoupon
+    ? { type: 'fixed', value: couponValue, id: String(couponRaw._id || ''), expiry: couponRaw.expiry || null }
+    : null
+
+  // Note — API uses "note" key
+  const note = String(root?.note || root?.note || '')
+
+  return { items, couponName, couponCode, couponMeta, note, couponValue }
 }
 
-
 function payloadHasCartItems(payload) {
-  const root = payload?.data || payload?.cart || payload || {}
+  // Support all common response shapes including { updatedCart: {...} }
+  const root =
+    payload?.updatedCart ||
+    payload?.data ||
+    payload?.cart ||
+    payload ||
+    {}
   return (
-    Array.isArray(root?.items) ||
     Array.isArray(root?.products) ||
+    Array.isArray(root?.items) ||
     Array.isArray(root?.cartItems) ||
-    Array.isArray(root?.data?.items) ||
     Array.isArray(root?.data?.products) ||
+    Array.isArray(root?.data?.items) ||
     Array.isArray(root?.data?.cartItems)
   )
 }
 
 async function requestWithFallback(method, urls, config = {}) {
   const list = Array.isArray(urls) ? urls : [urls]
-  let lastError = null
+  let lastErr = null
   for (const url of list) {
     try {
-      return await axios({ method, url, withCredentials: true, ...config })
+      const res = await axios({ method, url, withCredentials: true, ...config })
+      return res
     } catch (err) {
-      lastError = err
+      lastErr = err
       const status = err?.response?.status
-      if (status && status !== 404) break
+      if (status && status !== 404 && status !== 405) throw err
     }
   }
-  throw lastError
+  throw lastErr
 }
 
 export function CartProvider({ children }) {
-  const { user } = useAuth()
-  const [state, setState] = useState({
-    ...EMPTY_CART_STATE,
-  })
+  const { user, loading: authLoading } = useAuth()
+  const [state, setState] = useState(EMPTY_CART_STATE)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const currentUserId = user?._id || user?.id || null
   const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
   const isAdmin = role === 'admin'
-  const currentUserId = String(user?._id || user?.id || '')
+  const isCustomer = role === 'customer' || role === 'user'
 
   const ensureUserCartAccess = useCallback(() => {
-    if (isAdmin) {
-      const message = 'This cart operation is for user accounts only.'
-      setError(message)
-      return { ok: false, message }
-    }
+    if (!user) return { ok: false, message: 'Please log in.' }
+    if (isAdmin) return { ok: false, message: 'Admins cannot modify cart.' }
     return { ok: true }
-  }, [isAdmin])
+  }, [user, isAdmin])
 
   const ensureAdminAccess = useCallback(() => {
-    if (!isAdmin) {
-      const message = 'This operation is for admin accounts only.'
-      setError(message)
-      return { ok: false, message }
-    }
+    if (!isAdmin) return { ok: false, message: 'Admin access required.' }
     return { ok: true }
   }, [isAdmin])
 
   const hydrateFromPayload = useCallback((payload) => {
-    const normalized = normalizeCartPayload(payload)
-    setState(normalized)
-    return normalized
+    if (!payload) return
+    if (payloadHasCartItems(payload)) {
+      const normalized = normalizeCartPayload(payload)
+      setState((prev) => ({
+        ...prev,
+        items: normalized.items,
+        couponName: normalized.couponName,
+        couponCode: normalized.couponCode,
+        couponMeta: normalized.couponMeta,
+        couponValue: normalized.couponValue,
+        note: normalized.note,
+      }))
+    } else {
+      const normalized = normalizeCartPayload(payload)
+      setState((prev) => ({
+        ...prev,
+        ...(normalized.couponCode !== undefined ? { couponCode: normalized.couponCode } : {}),
+        ...(normalized.note !== undefined ? { note: normalized.note } : {}),
+        ...(normalized.couponMeta ? { couponMeta: normalized.couponMeta } : {}),
+        ...(Number.isFinite(Number(normalized.couponValue)) ? { couponValue: Number(normalized.couponValue) } : {}),
+      }))
+    }
   }, [])
 
-  const getCart = useCallback(async (userId = null) => {
+  const getCart = useCallback(async () => {
+    if (isAdmin || authLoading) return null
+    if (!user) return null
     setLoading(true)
     setError('')
     try {
-      const targetUserId = userId ? String(userId) : ''
-      let urls = []
-
-      if (targetUserId) {
-        if (!isAdmin) {
-          const message = 'Passing userId to getCart is allowed for admin only.'
-          setError(message)
-          return null
-        }
-        urls = [
-          `${API_BASE_URL}/${encodeURIComponent(targetUserId)}`,
-          `${API_BASE_URL}/get-cart/${encodeURIComponent(targetUserId)}`,
-          `${API_BASE_URL}?userId=${encodeURIComponent(targetUserId)}`,
-        ]
-      } else {
-        urls = [
-          `${API_BASE_URL}`,
-          `${API_BASE_URL}/my-cart`,
-          `${API_BASE_URL}/get-cart`,
-        ]
-        if (currentUserId) {
-          urls.push(`${API_BASE_URL}?userId=${encodeURIComponent(currentUserId)}`)
-        }
-      }
-
-      const { data } = await requestWithFallback('get', urls)
-      return hydrateFromPayload(data)
+      const { data } = await requestWithFallback('get', [
+        API_BASE_URL,
+        `${API_BASE_URL}/get-cart`,
+        `${API_BASE_URL}/my-cart`,
+      ])
+      hydrateFromPayload(data)
+      return data
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to fetch cart.')
+      const msg = err?.response?.data?.message || err?.message || 'Failed to fetch cart.'
+      setError(msg)
       return null
     } finally {
       setLoading(false)
     }
-  }, [hydrateFromPayload, isAdmin, currentUserId])
+  }, [hydrateFromPayload, isAdmin, authLoading, user])
 
   const getAdminCarts = useCallback(async () => {
     const access = ensureAdminAccess()
@@ -275,21 +319,26 @@ export function CartProvider({ children }) {
     const access = ensureUserCartAccess()
     if (!access.ok) return access
     if (!productId) return { ok: false, message: 'Missing productId' }
+
     setError('')
     const previousState = state
+
+    // Optimistic: remove immediately from UI — this is the source of truth
     setState((prev) => ({
       ...prev,
       items: prev.items.filter((item) => String(item.productId) !== String(productId)),
     }))
+
     try {
-      const { data } = await axios.put(
+      await axios.delete(
         `${API_BASE_URL}?productId=${encodeURIComponent(productId)}`,
-        {},
         { withCredentials: true }
       )
-      hydrateFromPayload(data)
-      return { ok: true, data }
+      // Do NOT hydrate from response — the backend may return unpopulated product
+      // objects for the deleted item. The optimistic state above is already correct.
+      return { ok: true }
     } catch (err) {
+      // Revert optimistic removal on failure
       setState(previousState)
       const msg = err?.response?.data?.message || err?.message || 'Failed to remove item from cart.'
       setError(msg)
@@ -297,43 +346,35 @@ export function CartProvider({ children }) {
     }
   }, [ensureUserCartAccess, state])
 
-  const updateCart = useCallback(async ({ note, couponCode, coupon, order } = {}) => {
+  const updateCart = useCallback(async (updates) => {
     const access = ensureUserCartAccess()
     if (!access.ok) return access
     setError('')
     const previousState = state
+
+    // Optimistic update for note/coupon fields
+    setState((prev) => ({
+      ...prev,
+      ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
+      ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
+    }))
+
     try {
-      const payload = {}
-      const resolvedCoupon = coupon != null ? coupon : couponCode
-      const resolvedOrder = order != null ? order : note
-      if (resolvedCoupon != null) {
-        payload.coupon = String(resolvedCoupon).trim().toUpperCase()
+      const body = {
+        ...(updates.couponCode !== undefined ? { couponCode: String(updates.couponCode) } : {}),
+        ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
+        ...(updates.note !== undefined ? { note: String(updates.note).slice(0, 300) } : {}),
       }
-      if (resolvedOrder != null) {
-        payload.order = String(resolvedOrder).slice(0, 300)
-      }
-
-      // Optimistic local update so fields are reflected immediately.
-      setState((prev) => ({
-        ...prev,
-        ...(resolvedCoupon != null ? { couponCode: String(resolvedCoupon).trim().toUpperCase() } : {}),
-        ...(resolvedOrder != null ? { orderNote: String(resolvedOrder).slice(0, 300) } : {}),
-      }))
-
-      const { data } = await axios.patch(API_BASE_URL, payload, { withCredentials: true })
-
-      // Some backends return only message/partial payload on patch.
-      // Hydrate full state only when cart items are present; otherwise keep existing items.
+      const { data } = await axios.patch(API_BASE_URL, body, { withCredentials: true })
       if (payloadHasCartItems(data)) {
         hydrateFromPayload(data)
       } else {
         const normalized = normalizeCartPayload(data)
         setState((prev) => ({
           ...prev,
-          ...(normalized.couponName !== undefined ? { couponName: normalized.couponName } : {}),
           ...(normalized.couponCode !== undefined ? { couponCode: normalized.couponCode } : {}),
-          ...(normalized.orderNote !== undefined ? { orderNote: normalized.orderNote } : {}),
-          ...(normalized.couponMeta !== undefined ? { couponMeta: normalized.couponMeta } : {}),
+          ...(normalized.note !== undefined ? { note: normalized.note } : {}),
+          ...(normalized.couponMeta ? { couponMeta: normalized.couponMeta } : {}),
           ...(Number.isFinite(Number(normalized.couponValue)) ? { couponValue: Number(normalized.couponValue) } : {}),
         }))
       }
@@ -344,7 +385,7 @@ export function CartProvider({ children }) {
       setError(msg)
       return { ok: false, message: msg }
     }
-  }, [ensureUserCartAccess, state])
+  }, [ensureUserCartAccess, hydrateFromPayload, state])
 
   const applyCoupon = useCallback(async (code) => {
     const normalized = String(code || '').trim().toUpperCase()
@@ -363,10 +404,8 @@ export function CartProvider({ children }) {
       if (payloadHasCartItems(data)) {
         hydrateFromPayload(data)
       } else {
-        const normalized = normalizeCartPayload(data)
         setState((prev) => ({
           ...prev,
-          ...(normalized.orderNote !== undefined ? { orderNote: normalized.orderNote } : {}),
           couponName: '',
           couponCode: '',
           couponMeta: null,
@@ -386,26 +425,44 @@ export function CartProvider({ children }) {
     return updateCart({ note: String(note || '') })
   }, [updateCart])
 
+  // FIX: Optimistic quantity change so navbar badge updates immediately
   const changeQuantity = useCallback(async (productId, opt) => {
     const access = ensureUserCartAccess()
     if (!access.ok) return access
     if (!productId) return { ok: false, message: 'Missing productId' }
     const normalizedOpt = opt === 'dec' ? 'dec' : 'inc'
     setError('')
+
+    // Optimistic update: change qty immediately in UI
+    setState((prev) => {
+      const idx = prev.items.findIndex((item) => String(item.productId) === String(productId))
+      if (idx < 0) return prev
+      const nextItems = [...prev.items]
+      const current = nextItems[idx]
+      const newQty = normalizedOpt === 'inc'
+        ? current.quantity + 1
+        : Math.max(1, current.quantity - 1)
+      nextItems[idx] = { ...current, quantity: newQty }
+      return { ...prev, items: nextItems }
+    })
+
     try {
-      const { data } = await requestWithFallback(
-        'put',
-        [`${API_BASE_URL}/quantity`, `${API_BASE_URL}/change-quantity`, `${API_BASE_URL}/changeQuantity`],
-        { data: { productId, opt: normalizedOpt } }
+      // Use query params: PUT /cart/change-quantity?productId=...&opt=inc|dec
+      const { data } = await axios.put(
+        `${API_BASE_URL}/change-quantity?productId=${encodeURIComponent(productId)}&opt=${normalizedOpt}`,
+        {},
+        { withCredentials: true }
       )
       hydrateFromPayload(data)
       return { ok: true, data }
     } catch (err) {
+      // Revert optimistic update on failure by re-fetching
       const msg = err?.response?.data?.message || err?.message || 'Failed to change quantity.'
       setError(msg)
+      getCart().catch(() => {})
       return { ok: false, message: msg }
     }
-  }, [ensureUserCartAccess, hydrateFromPayload])
+  }, [ensureUserCartAccess, hydrateFromPayload, getCart])
 
   const increment = useCallback((productId) => changeQuantity(productId, 'inc'), [changeQuantity])
   const decrement = useCallback((productId) => changeQuantity(productId, 'dec'), [changeQuantity])
@@ -447,11 +504,13 @@ export function CartProvider({ children }) {
   }, [ensureUserCartAccess, state])
 
   useEffect(() => {
-    if (isAdmin) return
-    getCart().catch(() => {
-      // errors are set in state
-    })
-  }, [getCart, isAdmin])
+    if (isAdmin || authLoading) return
+    if (!user) {
+      setState({ ...EMPTY_CART_STATE })
+      return
+    }
+    getCart().catch(() => {})
+  }, [getCart, isAdmin, authLoading, user])
 
   const totals = useMemo(
     () => calculateCartTotals(state.items, state.couponMeta, state.couponValue),
@@ -468,7 +527,7 @@ export function CartProvider({ children }) {
     couponName: state.couponName,
     couponCode: state.couponCode,
     couponValue: state.couponValue,
-    orderNote: state.orderNote,
+    note: state.note,
     lineItems: totals.lines,
     couponDiscount: totals.couponDiscount,
     loading,
@@ -493,7 +552,7 @@ export function CartProvider({ children }) {
     state.couponName,
     state.couponCode,
     state.couponValue,
-    state.orderNote,
+    state.note,
     totals,
     loading,
     error,
