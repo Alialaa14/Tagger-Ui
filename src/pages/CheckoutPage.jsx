@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import socket from '../socket'
 import './CheckoutPage.css'
 import "./CheckoutPage.extra.css"
 
@@ -155,9 +156,34 @@ export default function CheckoutPage() {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setIsSubmitting(true)
+    console.log("Submitting ....")
     // 🔌 Wire your API order creation here:
-    // await createOrder({ ...form, items: lineItems, total: finalTotal, coupon: couponCode })
-    await new Promise((res) => setTimeout(res, 900))
+    const orderPayload = {
+      shopId: user?._id || user?.id,
+      traderId: null,
+      products: (lineItems || []).map((line) => ({
+        productId: line?.item?.productId || line?.item?._id || line?.item?.id,
+        quantity: Number(line?.item?.quantity) || 1,
+        totalPrice: Number(line?.pricing?.finalTotal) || 0,
+      })),
+      isPaid: false,
+      isAccepted: false,
+      isRejected: false,
+      isDelivered: false,
+      isPacked: false,
+      isCancelled: false,
+      isReturned: false,
+      totalPrice: Number(finalTotal) || 0,
+      totalQuantity: Number(totalQuantity) || 0,
+      note: note || '',
+      address: form.address || '',
+    }
+    try {
+      console.log(orderPayload)
+      socket.emit('createOrder', orderPayload)
+    } catch (error) {
+      console.log(`Socket Error ${error.message}`)
+    }
     clear()
     setSubmitted(true)
     setIsSubmitting(false)

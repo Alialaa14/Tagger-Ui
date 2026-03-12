@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
+import NotificationsPanel from '../components/notifications/NotificationsPanel'
 import './orders.css'
 
 // ── Status config ─────────────────────────────────────────────
@@ -323,6 +324,8 @@ export default function TraderOrdersPage() {
             <p>اقبل أو ارفض أو قبل جزئياً طلبات عملائك</p>
           </div>
         </div>
+
+        <NotificationsPanel title="إشعارات التاجر" />
 
         {/* Stats */}
         <div className="orders-stats-strip">

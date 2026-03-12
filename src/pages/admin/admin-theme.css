@@ -274,6 +274,89 @@
   box-shadow: var(--green-glow);
 }
 
+.admin-kpi-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.admin-kpi {
+  border-radius: 14px;
+  border: 1.5px solid var(--green-border);
+  background: #ffffff;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-kpi-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.admin-kpi-value {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.admin-notif-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-notif-item {
+  min-height: 54px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-notif-item:empty {
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background-size: 200% 100%;
+  animation: notifShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes notifShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.admin-notif-message {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.admin-notif-meta {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.admin-notif-empty {
+  margin-top: 12px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed rgba(15, 23, 42, 0.12);
+  text-align: center;
+}
+
 /* ─── Buttons ────────────────────────────────────────────────── */
 
 .admin-btn {

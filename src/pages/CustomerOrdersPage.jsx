@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
+import NotificationsPanel from '../components/notifications/NotificationsPanel'
 import './orders.css'
 
 // ── Status config ─────────────────────────────────────────────
@@ -168,6 +169,8 @@ export default function CustomerOrdersPage() {
             ← تسوّق أكثر
           </Link>
         </div>
+
+        <NotificationsPanel title="إشعاراتي" />
 
         {/* Filters */}
         <div className="orders-filters">

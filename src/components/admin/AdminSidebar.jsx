@@ -2,8 +2,11 @@
 import { NavLink } from 'react-router-dom'
 
 const items = [
+  { to: '/admin', label: 'لوحة التحكم' },
+  { to: '/admin/orders', label: 'إدارة الطلبات' },
   { to: '/admin/categories', label: 'إدارة الفئات' },
   { to: '/admin/products', label: 'إدارة المنتجات' },
+  { to: '/admin/notifications', label: 'إدارة الإشعارات' },
   { to: '/admin/users-online', label: 'إدارة المستخدمين' },
 ]
 

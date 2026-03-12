@@ -10,6 +10,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import ProductManager from './pages/admin/ProductManager'
 import CategoryManager from './pages/admin/CategoryManager'
 import UsersOnline from './pages/admin/UsersOnline'
+import NotificationsPage from './pages/admin/NotificationsPage'
 import Home from './pages/Home'
 import CategoriesPage from './pages/CategoriesPage'
 import CategoryPage from './pages/CategoryPage'
@@ -42,14 +43,15 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders"    element={<CustomerOrdersPage />} />
             <Route path="/trader/orders" element={<TraderOrdersPage />} />
-           <Route path="/admin/orders"  element={<AdminOrdersPage />} />
           </Route>
 
           <Route element={<RequireAdmin />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="categories" element={<CategoryManager />} />
               <Route path="products" element={<ProductManager />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="users-online" element={<UsersOnline />} />
             </Route>
           </Route>

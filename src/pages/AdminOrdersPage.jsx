@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import { useAuth } from '../context/AuthContext'
+﻿import React, { useEffect, useState } from 'react'
+import { deleteOrderById, fetchAdminOrders, forwardOrderToTrader, updateOrderById, updateOrderStatus } from '../controllers/admin/ordersController'
+import { fetchTraderUsers } from '../controllers/admin/tradersController'
+import socket from '../socket'
 import './orders.css'
 
 // ── Status config ─────────────────────────────────────────────
@@ -18,6 +18,36 @@ function statusMeta(s) { return STATUS_MAP[s] || { label: s, cls: 'status-pendin
 function fmtDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function deriveStatus(order) {
+  if (order?.isDelivered) return 'delivered'
+  if (order?.isAccepted) return 'accepted'
+  if (order?.isRejected || order?.isCancelled || order?.isReturned) return 'rejected'
+  return order?.status || 'pending'
+}
+
+function normalizeOrder(order) {
+  if (!order || typeof order !== 'object') return order
+  const items = Array.isArray(order.items)
+    ? order.items
+    : Array.isArray(order.products)
+      ? order.products.map((p) => ({
+          productId: p.productId,
+          quantity: p.quantity,
+          lineTotal: p.totalPrice,
+        }))
+      : []
+  const shop = order.shopId || order.shop || {}
+  return {
+    ...order,
+    status: deriveStatus(order),
+    items,
+    finalTotal: order.finalTotal ?? order.totalPrice,
+    customerName: order.customerName || shop.username || shop.shopName,
+    customerPhone: order.customerPhone || shop.phoneNumber,
+    address: order.address || shop.address,
+  }
 }
 
 // ── Order Details Modal ───────────────────────────────────────
@@ -391,49 +421,80 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
 
 // ── Page ──────────────────────────────────────────────────────
 export default function AdminOrdersPage() {
-  const { user } = useAuth()
   const [orders, setOrders]   = useState([])
   const [traders, setTraders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [search, setSearch]   = useState('')
   const [filter, setFilter]   = useState('all')
 
   useEffect(() => {
-    // 🔌 Replace with real API calls:
-    // const [ordersRes, tradersRes] = await Promise.all([
-    //   axios.get('/api/v1/order', { withCredentials: true }),
-    //   axios.get('/api/v1/user?role=trader', { withCredentials: true }),
-    // ])
-    setTimeout(() => {
-      setOrders(SAMPLE_ADMIN_ORDERS)
-      setTraders(SAMPLE_TRADERS)
-      setLoading(false)
-    }, 600)
+    let active = true
+    setLoading(true)
+    setError('')
+    Promise.all([fetchAdminOrders(), fetchTraderUsers()])
+      .then(([ordersRes, tradersRes]) => {
+        if (!active) return
+        const normalized = Array.isArray(ordersRes) ? ordersRes.map(normalizeOrder) : []
+        setOrders(normalized)
+        setTraders(Array.isArray(tradersRes) ? tradersRes : [])
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (!active) return
+        setError(err?.response?.data?.message || err?.message || 'Failed to fetch orders.')
+        setOrders([])
+        setTraders([])
+        setLoading(false)
+      })
+    return () => { active = false }
   }, [])
 
-  function handleAction(orderId, action, extra = {}) {
-    console.log('Admin action:', action, orderId, extra)
-    // 🔌 Wire API here
-    if (action === 'accept') {
-      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, status: 'accepted' } : o))
-    } else if (action === 'reject') {
-      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, status: 'rejected' } : o))
-    } else if (action === 'forward') {
-      const trader = traders.find((t) => (t._id || t.id) === extra.traderId)
-      setOrders((prev) => prev.map((o) =>
-        (o._id || o.id) === orderId
-          ? { ...o, status: 'forwarded', assignedTrader: trader?.username || extra.traderId }
-          : o
-      ))
-    } else if (action === 'edit') {
-      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...extra } : o))
+  useEffect(() => {
+    function handleNewOrder(payload) {
+      console.log(payload)
+      const normalized = normalizeOrder(payload)
+      setOrders((prev) => [normalized, ...(prev || [])])
+    }
+
+    socket.on('newOrder', handleNewOrder)
+    return () => {
+      socket.off('newOrder', handleNewOrder)
+    }
+  }, [])
+
+  async function handleAction(orderId, action, extra = {}) {
+    try {
+      if (action === 'accept') {
+        const updated = await updateOrderStatus(orderId, 'accepted', extra)
+        setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...(updated || { status: 'accepted' }) } : o))
+      } else if (action === 'reject') {
+        const updated = await updateOrderStatus(orderId, 'rejected', extra)
+        setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...(updated || { status: 'rejected' }) } : o))
+      } else if (action === 'forward') {
+        const trader = traders.find((t) => (t._id || t.id) === extra.traderId)
+        const updated = await forwardOrderToTrader(orderId, extra)
+        setOrders((prev) => prev.map((o) =>
+          (o._id || o.id) === orderId
+            ? { ...o, ...(updated || { status: 'forwarded', assignedTrader: trader?.username || extra.traderId }) }
+            : o
+        ))
+      } else if (action === 'edit') {
+        const updated = await updateOrderById(orderId, extra)
+        setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...(updated || extra) } : o))
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to update order.')
     }
   }
 
-  function handleDelete(orderId) {
-    console.log('Delete order:', orderId)
-    // 🔌 Wire: await axios.delete(`/api/v1/order/${orderId}`, { withCredentials: true })
-    setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId))
+  async function handleDelete(orderId) {
+    try {
+      await deleteOrderById(orderId)
+      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId))
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to delete order.')
+    }
   }
 
   const stats = {
@@ -454,10 +515,7 @@ export default function AdminOrdersPage() {
   })
 
   return (
-    <div className="home-page">
-      <Navbar />
-
-      <main className="orders-page-wrap container" dir="rtl">
+    <section className="orders-page-wrap container" dir="rtl">
         {/* Header */}
         <div className="orders-page-head">
           <div>
@@ -466,6 +524,11 @@ export default function AdminOrdersPage() {
             <p>راجع وأدر جميع طلبات المتجر من مكان واحد</p>
           </div>
         </div>
+        {error && (
+          <div className="orders-empty" style={{ minHeight: 'auto', marginBottom: 16 }}>
+            <h2>{error}</h2>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="orders-stats-strip">
@@ -550,62 +613,7 @@ export default function AdminOrdersPage() {
             ))}
           </div>
         )}
-      </main>
-
-      <Footer />
-    </div>
+      </section>
   )
 }
 
-// ── Sample data ───────────────────────────────────────────────
-const SAMPLE_TRADERS = [
-  { _id: 't1', username: 'تاجر المحلة', shopName: 'متجر النور' },
-  { _id: 't2', username: 'تاجر الإسكندرية', shopName: 'سوبر ماركت الرياض' },
-  { _id: 't3', username: 'تاجر القاهرة', shopName: 'الأمين للتجارة' },
-]
-
-const SAMPLE_ADMIN_ORDERS = [
-  {
-    _id: 'ORD-3001', status: 'pending',
-    createdAt: '2025-03-01T08:00:00Z',
-    customerName: 'علي حسن', customerPhone: '01011223344',
-    address: 'شارع الجمهورية، المنصورة', city: 'المنصورة',
-    finalTotal: 1540, paymentMethod: 'cash',
-    orderNote: 'التسليم قبل الظهر',
-    items: [
-      { productId: 'p1', product: { name: 'تلفاز Samsung 55"' }, quantity: 1, lineTotal: 1400 },
-      { productId: 'p2', product: { name: 'كابل HDMI 3م' }, quantity: 2, lineTotal: 140 },
-    ],
-  },
-  {
-    _id: 'ORD-3002', status: 'forwarded',
-    createdAt: '2025-02-27T12:00:00Z',
-    customerName: 'هبة إبراهيم', customerPhone: '01099887766',
-    address: 'شارع مصطفى كامل، طنطا', city: 'طنطا',
-    finalTotal: 750, paymentMethod: 'transfer',
-    assignedTrader: 'تاجر المحلة',
-    items: [
-      { productId: 'p3', product: { name: 'خلاط كهربائي' }, quantity: 3, lineTotal: 750 },
-    ],
-  },
-  {
-    _id: 'ORD-3003', status: 'accepted',
-    createdAt: '2025-02-25T15:00:00Z',
-    customerName: 'كريم سالم', customerPhone: '01234567890',
-    address: 'شارع الهرم، الجيزة', city: 'الجيزة',
-    finalTotal: 2100, paymentMethod: 'cash',
-    items: [
-      { productId: 'p4', product: { name: 'ثلاجة Carrier 14ft' }, quantity: 1, lineTotal: 2100 },
-    ],
-  },
-  {
-    _id: 'ORD-3004', status: 'rejected',
-    createdAt: '2025-02-20T10:00:00Z',
-    customerName: 'نور الدين', customerPhone: '01555444333',
-    address: 'الدقي، الجيزة', city: 'الجيزة',
-    finalTotal: 390, paymentMethod: 'cash',
-    items: [
-      { productId: 'p5', product: { name: 'مكنسة كهربائية' }, quantity: 1, lineTotal: 390 },
-    ],
-  },
-]

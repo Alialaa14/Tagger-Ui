@@ -1,0 +1,147 @@
+﻿import React, { useEffect, useState } from 'react'
+import { fetchNotifications, sendNotificationToAll, sendNotificationToUser } from '../../controllers/admin/notificationsController'
+import './admin-theme.css'
+
+export default function NotificationsPage() {
+  const [target, setTarget] = useState('all')
+  const [userId, setUserId] = useState('')
+  const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [history, setHistory] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    setLoadingHistory(true)
+    fetchNotifications()
+      .then((res) => {
+        if (!active) return
+        setHistory(Array.isArray(res) ? res : [])
+        setLoadingHistory(false)
+      })
+      .catch(() => {
+        if (!active) return
+        setHistory([])
+        setLoadingHistory(false)
+      })
+    return () => { active = false }
+  }, [])
+
+  async function handleSend(e) {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!message.trim()) {
+      setError('نص الإشعار مطلوب')
+      return
+    }
+    if (target === 'user' && !userId.trim()) {
+      setError('معرّف المستخدم مطلوب للإرسال لمستخدم محدد')
+      return
+    }
+
+    try {
+      setSending(true)
+      const created = target === 'all'
+        ? await sendNotificationToAll(message.trim())
+        : await sendNotificationToUser(userId.trim(), message.trim())
+
+      setMessage('')
+      setUserId('')
+      setSuccess('تم إرسال الإشعار بنجاح')
+      if (created) {
+        setHistory((prev) => [created, ...prev])
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'فشل إرسال الإشعار')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <section className="admin-stack">
+      <div className="admin-card">
+        <p className="admin-kicker">الإشعارات</p>
+        <h2>إرسال إشعار</h2>
+        <p className="admin-muted">أرسل إشعاراً لكل المستخدمين أو لمستخدم محدد.</p>
+
+        <form className="admin-stack" onSubmit={handleSend}>
+          <label className="admin-label">
+            <span>نوع الإرسال</span>
+            <select className="admin-input" value={target} onChange={(e) => setTarget(e.target.value)}>
+              <option value="all">إلى جميع المستخدمين</option>
+              <option value="user">إلى مستخدم محدد</option>
+            </select>
+          </label>
+
+          {target === 'user' && (
+            <label className="admin-label">
+              <span>معرّف المستخدم</span>
+              <input
+                className="admin-input"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                placeholder="مثال: 65f2..."
+              />
+            </label>
+          )}
+
+          <label className="admin-label">
+            <span>نص الإشعار</span>
+            <textarea
+              className="admin-input"
+              style={{ minHeight: 120 }}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="اكتب نص الإشعار هنا..."
+            />
+          </label>
+
+          {error && <p className="admin-muted" style={{ color: '#dc2626' }}>{error}</p>}
+          {success && <p className="admin-muted" style={{ color: '#16a34a' }}>{success}</p>}
+
+          <div>
+            <button type="submit" className="admin-btn admin-btn-primary" disabled={sending}>
+              {sending ? 'جارٍ الإرسال...' : 'إرسال الإشعار'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="admin-card">
+        <p className="admin-kicker">الأرشيف</p>
+        <h2>آخر الإشعارات</h2>
+        <p className="admin-muted">قائمة سريعة بآخر الإشعارات المرسلة.</p>
+
+        {loadingHistory && (
+          <div className="admin-notif-list">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="admin-notif-item" />
+            ))}
+          </div>
+        )}
+
+        {!loadingHistory && history.length === 0 && (
+          <div className="admin-notif-empty">لا توجد إشعارات بعد.</div>
+        )}
+
+        {!loadingHistory && history.length > 0 && (
+          <div className="admin-notif-list">
+            {history.slice(0, 8).map((n, idx) => (
+              <div key={n._id || n.id || idx} className="admin-notif-item">
+                <div className="admin-notif-message">{n.message || n.text || '—'}</div>
+                <div className="admin-notif-meta">
+                  <span>{n.target || (n.userId ? 'مستخدم محدد' : 'الكل')}</span>
+                  {n.userId && <span>• {n.userId}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}

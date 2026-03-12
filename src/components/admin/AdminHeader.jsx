@@ -3,8 +3,10 @@ import { useLocation } from 'react-router-dom'
 
 const pageMeta = {
   '/admin': { title: 'لوحة التحكم', description: 'نظرة سريعة على إدارة النظام' },
+  '/admin/orders': { title: 'إدارة الطلبات', description: 'مراجعة الطلبات وإدارة حالتها والتجار' },
   '/admin/categories': { title: 'إدارة الفئات', description: 'إضافة وتعديل وحذف الفئات' },
   '/admin/products': { title: 'إدارة المنتجات', description: 'عرض المنتجات وتعديلها وحذفها' },
+  '/admin/notifications': { title: 'إدارة الإشعارات', description: 'إرسال إشعارات للمستخدمين' },
   '/admin/users-online': { title: 'إدارة المستخدمين', description: 'عرض المستخدمين مع التعديل والحذف عبر API' },
 }
 
