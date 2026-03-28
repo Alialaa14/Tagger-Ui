@@ -605,4 +605,13 @@
     padding: 0 14px;
     gap: 10px;
   }
+
+  .nb-dropdown {
+    position: fixed;
+    top: 72px;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    max-width: none;
+  }
 }

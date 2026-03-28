@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import PasswordInput from '../components/PasswordInput'
 import { useNavigate } from 'react-router-dom'
+import BackNavigator from '../components/common/BackNavigator'
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
@@ -24,6 +25,7 @@ export default function ResetPassword() {
 
   return (
     <section className="auth-page" dir="rtl" lang="ar">
+      <BackNavigator className="is-floating" fallback="/verify-otp" />
       <div className="auth-grid">
         <aside className="auth-hero">
           <div className="auth-hero__badge">تعيين كلمة مرور</div>

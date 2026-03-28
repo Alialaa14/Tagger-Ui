@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
-import { refreshAuthFromCookies } from '../socket'
+import { connectSocket, disconnectSocket } from '../socket'
 
 const AuthContext = createContext(null)
 const API_BASE = 'http://localhost:3000/api/v1/auth'
@@ -27,6 +27,7 @@ export function AuthProvider({ children }) {
       const { data: res } = await axios.get(`${API_BASE}/me`, { withCredentials: true })
       const nextUser = normalizeUserPayload(res)
       setUser(nextUser)
+      if (nextUser) connectSocket(nextUser)
       const role = nextUser?.role || nextUser?.accountType || null
       if (role) localStorage.setItem('user_role', String(role).toLowerCase())
       else localStorage.removeItem('user_role')
@@ -52,18 +53,19 @@ export function AuthProvider({ children }) {
       // ignore logout transport errors and clear local auth anyway
     } finally {
       setUser(null)
+      disconnectSocket()
       localStorage.removeItem('user_role')
       document.cookie = 'access_token=;path=/;max-age=0;SameSite=Lax'
       try { refreshAuthFromCookies() } catch (_) { /* ignore */ }
     }
   }, [])
-
   const updateProfile = useCallback(async (payload) => {
     setError(null)
     const { data: res } = await axios.patch(`${API_BASE}/update-profile`, payload, { withCredentials: true })
     const nextUser = normalizeUserPayload(res) || normalizeUserPayload(res?.data) || null
     if (nextUser) {
       setUser(nextUser)
+      connectSocket(nextUser)
       const role = nextUser?.role || nextUser?.accountType || null
       if (role) localStorage.setItem('user_role', String(role).toLowerCase())
     }

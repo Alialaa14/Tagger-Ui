@@ -52,15 +52,29 @@ export default function BannerCarousel() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const [animDir, setAnimDir] = useState('next')
+  const [slides, setSlides] = useState(SLIDES)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    // Read from admin configured localStorage if available
+    const stored = localStorage.getItem('tagger_banners')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSlides(parsed)
+        }
+      } catch (e) {}
+    }
+  }, [])
 
   const goTo = useCallback((i, dir = 'next') => {
     setAnimDir(dir)
     setIndex(i)
   }, [])
 
-  const next = useCallback(() => goTo((index + 1) % SLIDES.length, 'next'), [index, goTo])
-  const prev = useCallback(() => goTo((index - 1 + SLIDES.length) % SLIDES.length, 'prev'), [index, goTo])
+  const next = useCallback(() => goTo((index + 1) % slides.length, 'next'), [index, slides.length, goTo])
+  const prev = useCallback(() => goTo((index - 1 + slides.length) % slides.length, 'prev'), [index, slides.length, goTo])
 
   useEffect(() => {
     if (paused) return
@@ -68,7 +82,9 @@ export default function BannerCarousel() {
     return () => clearInterval(id)
   }, [paused, next])
 
-  const slide = SLIDES[index]
+  const slide = slides[index] || slides[0]
+
+  if (!slides || slides.length === 0) return null
 
   return (
     <section
@@ -78,9 +94,9 @@ export default function BannerCarousel() {
       onMouseLeave={() => setPaused(false)}
     >
       {/* Slides */}
-      {SLIDES.map((s, i) => (
+      {slides.map((s, i) => (
         <div
-          key={s.id}
+          key={s.id || i}
           className={`bc-slide ${i === index ? 'bc-slide--active' : ''}`}
           style={{ background: s.bg }}
           aria-hidden={i !== index}
@@ -127,9 +143,9 @@ export default function BannerCarousel() {
 
       {/* Dots */}
       <div className="bc-dots" role="tablist" aria-label="اختر الشريحة">
-        {SLIDES.map((s, i) => (
+        {slides.map((s, i) => (
           <button
-            key={s.id}
+            key={s.id || i}
             role="tab"
             aria-selected={i === index}
             aria-label={`الشريحة ${i + 1}`}

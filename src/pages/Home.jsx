@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import BannerCarousel from '../components/BannerCarousel'
@@ -12,9 +12,18 @@ import './home.css'
 import FlashDeals from '../components/home/FlashDeals'
 import '../components/home/FlashDeals.css'
 import HowItWorks from '../components/home/HowItWorks'
+import FeaturedBrands from '../components/home/FeaturedBrands'
+import CustomerTestimonials from '../components/home/CustomerTestimonials'
+import NewsletterSignup from '../components/home/NewsletterSignup'
+import { useAuth } from '../context/AuthContext'
+import TraderDashboardControls from '../components/home/TraderDashboardControls'
 
 export default function Home() {
   const navigate = useNavigate()
+
+  const { user } = useAuth()
+  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const isTrader = role === 'trader'
 
   const {
     categories,
@@ -38,6 +47,8 @@ export default function Home() {
 
       <main className="home-content">
         <BannerCarousel />
+
+        {isTrader && <TraderDashboardControls />}
 
         <section
           className="home-category-section section container"
@@ -113,6 +124,10 @@ export default function Home() {
 
         <HowItWorks />
 
+        <FeaturedBrands />
+
+        <CustomerTestimonials />
+
         <section className="values-banner">
           <div className="values-inner">
             <div>
@@ -126,6 +141,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <NewsletterSignup />
       </main>
 
       <Footer />

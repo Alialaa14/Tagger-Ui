@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import seedCategories from "../data/seed_categories";
-import seedProducts from "../data/seed_products";
 
 // ─── Normalizers ──────────────────────────────────────────────────────────────
 
@@ -54,7 +52,7 @@ export default function useHomeData() {
 
       try {
         const { data } = await axios.get(
-          "http://localhost:3000/api/v1/page/home",
+          "http://localhost:3000/api/v1/pages/home",
           { withCredentials: true },
         );
 

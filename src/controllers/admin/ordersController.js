@@ -11,16 +11,20 @@ function pickOrder(payload) {
   return pickObject(payload, ["order"]);
 }
 
-export async function fetchAdminOrders() {
-  const response = await requestWithFallback(
-    [
-      () => axios.get(ORDER_BASE, withCreds()),
-      () => axios.get(`${API_BASE}/orders`, withCreds()),
-    ],
-    "No orders endpoint responded."
-  );
+export async function fetchAdminOrders(params = {}) {
+  const { limit, page, sortBy, sortOrder, ...rest } = params;
+  const response = await axios.get(ORDER_BASE, withCreds({
+    params: {
+      ...(limit    && { limit }),
+      ...(page     && { page }),
+      ...(sortBy   && { sortBy }),
+      ...(sortOrder && { sortOrder }),
+      populate: 'traderId',   // ask backend to populate trader so we get name/phone
+      ...rest,
+    },
+  }));
   const payload = unwrapPayload(response);
-  return pickOrders(payload);
+  return pickOrders(payload) || payload;
 }
 
 export async function fetchOrderById(orderId) {
@@ -89,3 +93,6 @@ export async function deleteOrderById(orderId) {
     "No order delete endpoint responded."
   );
 }
+
+
+

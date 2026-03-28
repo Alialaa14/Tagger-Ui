@@ -115,7 +115,15 @@ function normalizeCartPayload(payload) {
     payload ||
     {}
 
+  const cartRoot = root?.cart || root?.data?.cart || root
+
   const itemsRaw =
+    cartRoot?.products ||
+    cartRoot?.items ||
+    cartRoot?.cartItems ||
+    cartRoot?.data?.products ||
+    cartRoot?.data?.items ||
+    cartRoot?.data?.cartItems ||
     root?.products ||
     root?.items ||
     root?.cartItems ||
@@ -125,7 +133,12 @@ function normalizeCartPayload(payload) {
     []
   const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeCartItem).filter(Boolean) : []
 
-  const couponRaw = root?.coupon ?? root?.couponMeta ?? null
+  const couponRaw =
+    cartRoot?.coupon ??
+    cartRoot?.couponMeta ??
+    root?.coupon ??
+    root?.couponMeta ??
+    null
   const hasCoupon = couponRaw && typeof couponRaw === 'object'
 
   const couponName = hasCoupon
@@ -145,7 +158,11 @@ function normalizeCartPayload(payload) {
     : null
 
   // FIX: return null when note is absent so hydration never overwrites a saved note with ''
-  const note = root?.note !== undefined && root?.note !== null ? String(root.note) : null
+  const note = cartRoot?.note !== undefined && cartRoot?.note !== null
+    ? String(cartRoot.note)
+    : root?.note !== undefined && root?.note !== null
+    ? String(root.note)
+    : null
 
   return { items, couponName, couponCode, couponMeta, note, couponValue }
 }
@@ -157,7 +174,14 @@ function payloadHasCartItems(payload) {
     payload?.cart ||
     payload ||
     {}
+  const cartRoot = root?.cart || root?.data?.cart || root
   return (
+    Array.isArray(cartRoot?.products) ||
+    Array.isArray(cartRoot?.items) ||
+    Array.isArray(cartRoot?.cartItems) ||
+    Array.isArray(cartRoot?.data?.products) ||
+    Array.isArray(cartRoot?.data?.items) ||
+    Array.isArray(cartRoot?.data?.cartItems) ||
     Array.isArray(root?.products) ||
     Array.isArray(root?.items) ||
     Array.isArray(root?.cartItems) ||
@@ -292,6 +316,7 @@ export function CartProvider({ children }) {
     setError('')
     try {
       const payload = { productId, quantity: Math.max(1, Number(quantity) || 1) }
+      console.log(payload)
       const { data } = await axios.post(API_BASE_URL, payload, { withCredentials: true })
       hydrateFromPayload(data)
       return { ok: true, data }
@@ -474,7 +499,11 @@ export function CartProvider({ children }) {
     const previousState = state
     setState({ ...EMPTY_CART_STATE })
     try {
-      await axios.delete(API_BASE_URL, { withCredentials: true })
+      await requestWithFallback('delete', [
+        `${API_BASE_URL}/clear`,
+        `${API_BASE_URL}/empty`,
+        API_BASE_URL
+      ])
       setState({ ...EMPTY_CART_STATE })
       return { ok: true }
     } catch (err) {

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import PasswordInput from '../components/PasswordInput'
 import toast from '../utils/toast'
-import { refreshAuthFromCookies } from '../socket'
 import { useAuth } from '../context/AuthContext'
+import BackNavigator from '../components/common/BackNavigator'
 
 export default function Login() {
   const [phoneNumber, setPhone] = useState('')
@@ -45,6 +45,7 @@ export default function Login() {
 
   return (
     <section className="auth-page" dir="rtl" lang="ar">
+      <BackNavigator className="is-floating" />
       <div className="auth-grid">
         <aside className="auth-hero">
           <div className="auth-hero__badge">تجربة دخول أسرع</div>

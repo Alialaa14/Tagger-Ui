@@ -1,56 +1,79 @@
-﻿import React, { useEffect, useState } from 'react'
-import { deleteOrderById, fetchAdminOrders, forwardOrderToTrader, updateOrderById, updateOrderStatus } from '../controllers/admin/ordersController'
+import React, { useEffect, useState } from 'react'
+import { deleteOrderById, fetchAdminOrders, updateOrderById, updateOrderStatus } from '../controllers/admin/ordersController'
 import { fetchTraderUsers } from '../controllers/admin/tradersController'
-import socket from '../socket'
+import socket, { onSendOrder, offSendOrder } from '../socket'
+import BackNavigator from '../components/common/BackNavigator'
+import notificationSound from '../assets/tritone.mp3'
+import useCountdown from '../hooks/useCountdown'
 import './orders.css'
 
-// ── Status config ─────────────────────────────────────────────
+// -- Status config ---------------------------------------------
 const STATUS_MAP = {
-  pending:    { label: 'قيد الانتظار',   cls: 'status-pending',    icon: '⏳' },
-  accepted:   { label: 'مقبول',          cls: 'status-accepted',   icon: '✅' },
-  rejected:   { label: 'مرفوض',          cls: 'status-rejected',   icon: '❌' },
-  partial:    { label: 'مقبول جزئياً',   cls: 'status-partial',    icon: '⚠️' },
-  forwarded:  { label: 'محوّل لتاجر',    cls: 'status-forwarded',  icon: '📦' },
-  processing: { label: 'جار التنفيذ',    cls: 'status-processing', icon: '🔄' },
-  delivered:  { label: 'تم التسليم',     cls: 'status-delivered',  icon: '🎉' },
+  pending: { label: 'قيد المراجعة', cls: 'status-pending', icon: '🕐' },
+  accepted: { label: 'مقبول', cls: 'status-accepted', icon: '✅' },
+  rejected: { label: 'مرفوض', cls: 'status-rejected', icon: '❌' },
+  shipped: { label: 'تم الشحن', cls: 'status-forwarded', icon: '📦' },
+  delivered: { label: 'تم التسليم', cls: 'status-delivered', icon: '🚚' },
+  cancelled: { label: 'ملغي', cls: 'status-rejected', icon: '🚫' },
 }
-function statusMeta(s) { return STATUS_MAP[s] || { label: s, cls: 'status-pending', icon: '•' } }
+function statusMeta(s) { return STATUS_MAP[s] || { label: s, cls: 'status-pending', icon: '❓' } }
 function fmtDate(d) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+  const dateObj = new Date(d);
+  if (isNaN(dateObj)) return '—';
+  return dateObj.toLocaleString('ar-EG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
 }
 
 function deriveStatus(order) {
-  if (order?.isDelivered) return 'delivered'
-  if (order?.isAccepted) return 'accepted'
-  if (order?.isRejected || order?.isCancelled || order?.isReturned) return 'rejected'
   return order?.status || 'pending'
 }
 
 function normalizeOrder(order) {
   if (!order || typeof order !== 'object') return order
-  const items = Array.isArray(order.items)
-    ? order.items
-    : Array.isArray(order.products)
-      ? order.products.map((p) => ({
-          productId: p.productId,
-          quantity: p.quantity,
-          lineTotal: p.totalPrice,
-        }))
+  const products = Array.isArray(order.products)
+    ? order.products
+    : Array.isArray(order.items)
+      ? order.items.map((i) => ({
+        productId: i.productId || i.product,
+        quantity: i.quantity,
+        totalPrice: i.lineTotal,
+      }))
       : []
   const shop = order.shopId || order.shop || {}
+
+  // Resolve populated trader from any common field name the backend may use
+  const rawTrader = order.traderId || order.trader || order.assignedTo || order.traderDetails || null;
+  const traderObj = rawTrader && typeof rawTrader === 'object' ? rawTrader : null;
+  const traderInfo = traderObj ? {
+    name: traderObj.username || traderObj.name || traderObj.fullName || traderObj.shopName || '',
+    phone: traderObj.phoneNumber || traderObj.phone || traderObj.mobile || ''
+  } : null;
+
   return {
     ...order,
     status: deriveStatus(order),
-    items,
-    finalTotal: order.finalTotal ?? order.totalPrice,
-    customerName: order.customerName || shop.username || shop.shopName,
-    customerPhone: order.customerPhone || shop.phoneNumber,
-    address: order.address || shop.address,
+    products,
+    totalPrice: order.totalPrice ?? order.finalTotal ?? 0,
+    totalQuantity: order.totalQuantity ?? 0,
+    note: order.note || order.orderNote || '',
+    customerName: order.customerName || order.username || shop.username || shop.shopName,
+    customerPhone: order.customerPhone || order.phoneNumber || shop.phoneNumber,
+    address: order.address || order.shippingAddress || shop.address,
+    city: order.city || shop.city,
+    traderInfo,
+    assignedTrader: traderInfo ? `${traderInfo.name}${traderInfo.phone ? ` - ${traderInfo.phone}` : ''}` : (order.assignedTrader || ''),
+    createdAt: order.createdAt || new Date().toISOString(),
   }
 }
 
-// ── Order Details Modal ───────────────────────────────────────
+// -- Order Details Modal ---------------------------------------
 function OrderDetailsModal({ order, onClose }) {
   const sm = statusMeta(order.status)
   return (
@@ -58,8 +81,8 @@ function OrderDetailsModal({ order, onClose }) {
       <div className="orders-modal" dir="rtl">
         <div className="orders-modal-head">
           <div>
-            <h3>📋 تفاصيل الطلب #{order._id || order.id}</h3>
-            <p>جميع بيانات الطلب والعميل</p>
+            <h3>🧾 تفاصيل الطلب #{order._id || order.id}</h3>
+            <p>عرض تفاصيل الطلب كاملة بالتفصيل</p>
           </div>
           <button className="orders-modal-close" onClick={onClose}>✕</button>
         </div>
@@ -89,38 +112,38 @@ function OrderDetailsModal({ order, onClose }) {
           <div className="order-detail-item">
             <span>الإجمالي</span>
             <strong style={{ color: 'var(--g600, #16a34a)' }}>
-              {order.finalTotal?.toFixed(2) ?? '—'} ج.م
+              {order.totalPrice?.toFixed(2) ?? '—'} ج.م
             </strong>
           </div>
           <div className="order-detail-item">
             <span>طريقة الدفع</span>
-            <strong>{order.paymentMethod === 'cash' ? 'عند الاستلام' : (order.paymentMethod || '—')}</strong>
+            <strong>{order.paymentMethod === 'cash' ? 'نقداً عند الاستلام' : (order.paymentMethod || '—')}</strong>
           </div>
           <div className="order-detail-item">
-            <span>التاجر المحوّل إليه</span><strong>{order.assignedTrader || '—'}</strong>
+            <span>المندوب المسؤول عنه</span><strong>{order.assignedTrader || '—'}</strong>
           </div>
           <div className="order-detail-item">
             <span>تاريخ الطلب</span><strong>{fmtDate(order.createdAt)}</strong>
           </div>
         </div>
 
-        {order.orderNote && (
+        {order.note && (
           <div className="order-note">
             <span className="order-note-icon">📝</span>
-            <span>{order.orderNote}</span>
+            <span>{order.note}</span>
           </div>
         )}
 
-        {order.items?.length > 0 && (
+        {order.products?.length > 0 && (
           <div className="order-products-list">
-            <p className="order-products-list-title">المنتجات ({order.items.length})</p>
-            {order.items.map((it, i) => (
-              <div key={i} className="order-product-row">
+            <p className="order-products-list-title">المنتجات ({order.products.length})</p>
+            {order.products.map((it, i) => (
+              <div key={it._id || i} className="order-product-row">
                 <span className="order-product-name">
-                  {it.product?.name || it.productId || `منتج ${i + 1}`}
+                  {it.productId?.name || `منتج ${i + 1}`}
                 </span>
                 <span className="order-product-qty">× {it.quantity}</span>
-                <span className="order-product-price">{it.lineTotal?.toFixed(2) ?? '—'} ج.م</span>
+                <span className="order-product-price">{it.totalPrice?.toFixed(2) ?? '—'} ج.م</span>
               </div>
             ))}
           </div>
@@ -134,10 +157,11 @@ function OrderDetailsModal({ order, onClose }) {
   )
 }
 
-// ── Forward to Trader Modal ───────────────────────────────────
+// -- Forward to Trader Modal -----------------------------------
 function ForwardModal({ order, traders, onClose, onConfirm }) {
   const [traderId, setTraderId] = useState('')
   const [note, setNote] = useState('')
+  const [autoAssign, setAutoAssign] = useState(false)
 
   return (
     <div className="orders-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -155,22 +179,38 @@ function ForwardModal({ order, traders, onClose, onConfirm }) {
           <select
             className="orders-modal-select"
             value={traderId}
-            onChange={(e) => setTraderId(e.target.value)}
+            onChange={(e) => {
+              setTraderId(e.target.value)
+              if (e.target.value) setAutoAssign(false)
+            }}
+            disabled={autoAssign}
           >
             <option value="">— اختر تاجراً —</option>
             {traders.map((t) => (
               <option key={t._id || t.id} value={t._id || t.id}>
-                {t.username || t.shopName || t._id}
+                {t.username || t.name || t.shopName || t._id}{t.phoneNumber ? ` - ${t.phoneNumber}` : ''}
               </option>
             ))}
           </select>
         </label>
 
+        <label className="orders-modal-label" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <input
+            type="checkbox"
+            checked={autoAssign}
+            onChange={(e) => {
+              setAutoAssign(e.target.checked)
+              if (e.target.checked) setTraderId('')
+            }}
+          />
+          <span>تعيين تلقائي (اختيار أفضل تاجر متاح)</span>
+        </label>
+
         <label className="orders-modal-label">
-          <span>ملاحظة للتاجر (اختياري)</span>
+          <span>ملاحظات للتاجر (اختياري)</span>
           <textarea
             className="orders-modal-textarea"
-            placeholder="أي توجيهات إضافية…"
+            placeholder="أي تعليمات خاصة…"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -180,10 +220,10 @@ function ForwardModal({ order, traders, onClose, onConfirm }) {
           <button className="ord-btn ord-btn-details" onClick={onClose}>إلغاء</button>
           <button
             className="ord-btn ord-btn-forward"
-            disabled={!traderId}
-            onClick={() => { onConfirm({ traderId, note }); onClose() }}
+            disabled={!traderId && !autoAssign}
+            onClick={() => { onConfirm({ traderId, note, autoAssign }); onClose() }}
           >
-            إحالة الطلب
+            {autoAssign ? 'تعيين تلقائي' : 'إحالة لتاجر'}
           </button>
         </div>
       </div>
@@ -191,7 +231,7 @@ function ForwardModal({ order, traders, onClose, onConfirm }) {
   )
 }
 
-// ── Edit Order Modal ──────────────────────────────────────────
+// -- Edit Order Modal ------------------------------------------
 function EditOrderModal({ order, onClose, onConfirm }) {
   const [form, setForm] = useState({
     status: order.status || 'pending',
@@ -199,7 +239,7 @@ function EditOrderModal({ order, onClose, onConfirm }) {
     customerPhone: order.customerPhone || '',
     address: order.address || '',
     city: order.city || '',
-    orderNote: order.orderNote || '',
+    orderNote: order.note || '',
   })
 
   function change(field) {
@@ -212,7 +252,7 @@ function EditOrderModal({ order, onClose, onConfirm }) {
         <div className="orders-modal-head">
           <div>
             <h3>✏️ تعديل الطلب #{order._id || order.id}</h3>
-            <p>عدّل بيانات الطلب أو حالته</p>
+            <p>يمكنك تعديل بيانات هذا الطلب من هنا</p>
           </div>
           <button className="orders-modal-close" onClick={onClose}>✕</button>
         </div>
@@ -243,7 +283,7 @@ function EditOrderModal({ order, onClose, onConfirm }) {
             <input className="orders-modal-input" value={form.address} onChange={change('address')} />
           </label>
           <label className="orders-modal-label" style={{ gridColumn: '1 / -1' }}>
-            <span>ملاحظة الطلب</span>
+            <span>ملاحظات الطلب</span>
             <textarea className="orders-modal-textarea" value={form.orderNote} onChange={change('orderNote')} />
           </label>
         </div>
@@ -251,7 +291,7 @@ function EditOrderModal({ order, onClose, onConfirm }) {
         <div className="orders-modal-actions">
           <button className="ord-btn ord-btn-details" onClick={onClose}>إلغاء</button>
           <button className="ord-btn ord-btn-accept" onClick={() => { onConfirm(form); onClose() }}>
-            حفظ التعديلات
+            حفظ التغييرات
           </button>
         </div>
       </div>
@@ -259,22 +299,22 @@ function EditOrderModal({ order, onClose, onConfirm }) {
   )
 }
 
-// ── Delete Confirm Modal ──────────────────────────────────────
+// -- Delete Confirm Modal --------------------------------------
 function DeleteModal({ order, onClose, onConfirm }) {
   return (
     <div className="orders-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="orders-modal" dir="rtl" style={{ maxWidth: 400 }}>
         <div className="orders-modal-head">
           <div>
-            <h3>🗑️ حذف الطلب</h3>
-            <p>هل أنت متأكد من حذف الطلب <strong>#{order._id || order.id}</strong>؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+            <h3>تأكيد حذف الطلب</h3>
+            <p>هل أنت متأكد من حذف هذا الطلب <strong>#{order._id || order.id}</strong>؟ هذا الإجراء لا يمكن التراجع عنه.</p>
           </div>
           <button className="orders-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="orders-modal-actions">
           <button className="ord-btn ord-btn-details" onClick={onClose}>إلغاء</button>
           <button className="ord-btn ord-btn-delete" onClick={() => { onConfirm(); onClose() }}>
-            تأكيد الحذف
+            حذف نهائي
           </button>
         </div>
       </div>
@@ -282,14 +322,14 @@ function DeleteModal({ order, onClose, onConfirm }) {
   )
 }
 
-// ── Reject Reason Modal ───────────────────────────────────────
+// -- Reject Reason Modal ---------------------------------------
 function RejectModal({ onClose, onConfirm }) {
   const [reason, setReason] = useState('')
   return (
     <div className="orders-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="orders-modal" dir="rtl">
         <div className="orders-modal-head">
-          <div><h3>❌ رفض الطلب</h3><p>أدخل سبب الرفض.</p></div>
+          <div><h3>❌ رفض الطلب</h3><p>يرجى ذكر سبب الرفض.</p></div>
           <button className="orders-modal-close" onClick={onClose}>✕</button>
         </div>
         <label className="orders-modal-label">
@@ -305,7 +345,30 @@ function RejectModal({ onClose, onConfirm }) {
   )
 }
 
-// ── Admin order card ──────────────────────────────────────────
+// -- Order countdown timer -------------------------------------
+function OrderCountdown({ createdAt }) {
+  const remaining = useCountdown(createdAt, 5_000)
+  if (remaining <= 0) return null
+
+  const pct = (remaining / 5) * 100
+  const color = remaining <= 2 ? '#ef4444' : remaining <= 3 ? '#f59e0b' : '#3b82f6'
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0')
+  const ss = String(remaining % 60).padStart(2, '0')
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, fontSize: 12, fontWeight: 700, color }}>
+        <span>⏱ وقت متبقٍّ للمعالجة</span>
+        <span dir="ltr">{mm}:{ss}</span>
+      </div>
+      <div style={{ height: 5, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 99, transition: 'width 1s linear, background 0.3s' }} />
+      </div>
+    </div>
+  )
+}
+
+// -- Admin order card ------------------------------------------
 function AdminOrderCard({ order, traders, onAction, onDelete }) {
   const [modal, setModal] = useState(null) // 'details' | 'forward' | 'edit' | 'delete' | 'reject'
   const sm = statusMeta(order.status)
@@ -331,50 +394,74 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
             <span className="order-info-value">{order.customerPhone || '—'}</span>
           </div>
           <div className="order-info-item">
-            <span className="order-info-label">الأصناف</span>
-            <span className="order-info-value">{order.items?.length ?? '—'}</span>
+            <span className="order-info-label">المنتجات</span>
+            <span className="order-info-value">{order.products?.length ?? '—'}</span>
           </div>
           <div className="order-info-item">
             <span className="order-info-label">الإجمالي</span>
-            <span className="order-info-value is-green">{order.finalTotal?.toFixed(2) ?? '—'} ج.م</span>
+            <span className="order-info-value is-green">{order.totalPrice?.toFixed(2) ?? '—'} ج.م</span>
           </div>
           <div className="order-info-item">
             <span className="order-info-label">المدينة</span>
             <span className="order-info-value">{order.city || '—'}</span>
           </div>
-          {order.assignedTrader && (
-            <div className="order-info-item">
-              <span className="order-info-label">التاجر</span>
-              <span className="order-info-value">{order.assignedTrader}</span>
-            </div>
-          )}
         </div>
 
-        {order.orderNote && (
-          <div className="order-note">
-            <span className="order-note-icon">📝</span>
-            <span>{order.orderNote}</span>
+        {order.traderInfo && order.traderInfo.name && (
+          <div className="order-trader-box">
+            <div className="order-trader-box-icon">🏪</div>
+            <div className="order-trader-box-info">
+              <span className="order-trader-box-label">التاجر المكلّف</span>
+              <strong className="order-trader-box-name" dir="auto">{order.traderInfo.name}</strong>
+              {order.traderInfo.phone && <span className="order-trader-box-phone" dir="ltr">{order.traderInfo.phone}</span>}
+            </div>
           </div>
         )}
 
-        {/* ── Admin Actions ── */}
+        <OrderCountdown createdAt={order.forwardedAt} />
+
+        {order.note && (
+          <div className="order-note">
+            <span className="order-note-icon">📝</span>
+            <span>{order.note}</span>
+          </div>
+        )}
+
+        {/* -- Admin Actions -- */}
         <div className="order-card-actions">
-          <button className="ord-btn ord-btn-accept"  onClick={() => onAction(order._id || order.id, 'accept')}>
-            ✅ قبول
-          </button>
-          <button className="ord-btn ord-btn-reject"  onClick={() => setModal('reject')}>
-            ❌ رفض
-          </button>
-          <button className="ord-btn ord-btn-forward" onClick={() => setModal('forward')}>
-            📦 إحالة لتاجر
-          </button>
-          <button className="ord-btn ord-btn-edit"    onClick={() => setModal('edit')}>
+          {order.status === 'pending' && (
+            <>
+              <button className="ord-btn ord-btn-accept" onClick={() => onAction(order._id || order.id, 'accept')}>
+                ✅ قبول
+              </button>
+              <button className="ord-btn ord-btn-reject" onClick={() => setModal('reject')}>
+                ❌ رفض
+              </button>
+              <button className="ord-btn ord-btn-forward" onClick={() => setModal('forward')}>
+                📦 إحالة لتاجر
+              </button>
+            </>
+          )}
+
+          {order.status === 'accepted' && (
+            <button className="ord-btn ord-btn-forward" onClick={() => onAction(order._id || order.id, 'shipped')}>
+              📦 تعيين كـ "تم الشحن"
+            </button>
+          )}
+
+          {order.status === 'shipped' && (
+            <button className="ord-btn ord-btn-accept" style={{ background: '#10b981', color: '#fff' }} onClick={() => onAction(order._id || order.id, 'delivered')}>
+              🚚 تعيين كـ "تم التسليم"
+            </button>
+          )}
+
+          <button className="ord-btn ord-btn-edit" onClick={() => setModal('edit')}>
             ✏️ تعديل
           </button>
           <button className="ord-btn ord-btn-details" onClick={() => setModal('details')}>
             🔍 التفاصيل
           </button>
-          <button className="ord-btn ord-btn-delete"  onClick={() => setModal('delete')}>
+          <button className="ord-btn ord-btn-delete" onClick={() => setModal('delete')}>
             🗑️ حذف
           </button>
         </div>
@@ -419,25 +506,71 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────
+// -- Page ------------------------------------------------------
 export default function AdminOrdersPage() {
-  const [orders, setOrders]   = useState([])
+  const [orders, setOrders] = useState([])
   const [traders, setTraders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [search, setSearch]   = useState('')
-  const [filter, setFilter]   = useState('all')
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setError('')
-    Promise.all([fetchAdminOrders(), fetchTraderUsers()])
+
+    // fetch admin orders logic with new paginated api from customer orders page equivalent
+    Promise.all([
+      // NOTE: Here we need to update the fetchAdminOrders method in your controllers to support passing parameters or use axios inline
+      // Re-using fetchAdminOrders for this simple drop in replace we should update ordersController.js 
+      // but for now I'll use the controller function and let it handle UI/Pagination on frontend if it doesn't take params
+      fetchAdminOrders({ limit, page, sortBy, sortOrder }),
+      fetchTraderUsers()
+    ])
       .then(([ordersRes, tradersRes]) => {
         if (!active) return
-        const normalized = Array.isArray(ordersRes) ? ordersRes.map(normalizeOrder) : []
+
+        const traderList = Array.isArray(tradersRes) ? tradersRes : []
+
+        // Build an id→trader lookup so we can inject trader objects
+        // into orders that only carry a traderId string (same as socket payloads do)
+        const traderMap = {}
+        traderList.forEach((t) => {
+          const id = t._id || t.id
+          if (id) traderMap[String(id)] = t
+        })
+
+        let fetchedOrders = []
+        if (ordersRes?.data || ordersRes?.orders || ordersRes?.results) {
+          fetchedOrders = ordersRes.data || ordersRes.orders || ordersRes.results
+          const totalItems = ordersRes.total || ordersRes.count || fetchedOrders.length
+          if (totalItems > 0 && limit > 0) setTotalPages(Math.ceil(totalItems / limit))
+          else if (ordersRes.totalPages) setTotalPages(ordersRes.totalPages)
+        } else {
+          fetchedOrders = Array.isArray(ordersRes) ? ordersRes : []
+        }
+
+        // Inject the full trader object when traderId is only a string ID
+        const enriched = fetchedOrders.map((o) => {
+          const rawId = typeof o.traderId === 'string'
+            ? o.traderId
+            : (o.traderId?._id || o.traderId?.id || null)
+          if (rawId && traderMap[String(rawId)] && typeof o.traderId !== 'object') {
+            return { ...o, traderId: traderMap[String(rawId)] }
+          }
+          return o
+        })
+
+        const normalized = enriched.map(normalizeOrder)
         setOrders(normalized)
-        setTraders(Array.isArray(tradersRes) ? tradersRes : [])
+        setTraders(traderList)
         setLoading(false)
       })
       .catch((err) => {
@@ -448,18 +581,53 @@ export default function AdminOrdersPage() {
         setLoading(false)
       })
     return () => { active = false }
-  }, [])
+  }, [page, limit, sortBy, sortOrder])
 
   useEffect(() => {
-    function handleNewOrder(payload) {
-      console.log(payload)
-      const normalized = normalizeOrder(payload)
-      setOrders((prev) => [normalized, ...(prev || [])])
+    function playAudio() {
+      try {
+        const audio = new Audio(notificationSound);
+        audio.play().catch(e => console.error('Audio play failed:', e));
+      } catch (err) {
+        console.error('Audio error:', err);
+      }
     }
 
-    socket.on('newOrder', handleNewOrder)
+    function handleNewOrder(payload, isNew = false) {
+      if (isNew) playAudio();
+
+      // Backend structured it as { order: updatedOrder } for updates/forwarding, and { order, user } for new ones
+      const rawOrder = payload?.order || payload
+      if (payload?.user) {
+        rawOrder.shop = payload.user;
+      }
+      const normalized = normalizeOrder(rawOrder)
+      setOrders((prev) => {
+        const existingIdx = prev.findIndex((o) => (o._id || o.id) === (normalized._id || normalized.id))
+        if (existingIdx >= 0) {
+          const next = [...prev]
+          next[existingIdx] = { ...next[existingIdx], ...normalized }
+          return next
+        }
+        return [normalized, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      })
+    }
+
+    function handleOrderUnassigned({ orderId }) {
+      if (!orderId) return
+      console.log(orderId)
+      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId))
+    }
+
+    socket.on('newOrder', (data) => handleNewOrder(data, true))
+    socket.on('updateOrderStatus', (data) => handleNewOrder(data, false))
+    socket.on('orderUnassigned', handleOrderUnassigned)
+    onSendOrder((data) => handleNewOrder(data, true))
     return () => {
-      socket.off('newOrder', handleNewOrder)
+      socket.off('newOrder')
+      socket.off('updateOrderStatus')
+      socket.off('orderUnassigned', handleOrderUnassigned)
+      offSendOrder()
     }
   }, [])
 
@@ -467,21 +635,70 @@ export default function AdminOrdersPage() {
     try {
       if (action === 'accept') {
         const updated = await updateOrderStatus(orderId, 'accepted', extra)
-        setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...(updated || { status: 'accepted' }) } : o))
+        setOrders((prev) => prev.map((o) => {
+          if ((o._id || o.id) === orderId) {
+            const nextOrder = { ...o, ...(updated || { status: 'accepted' }) }
+            socket.emit('updateOrderStatus', { orderId, status: 'accepted' })
+            return nextOrder
+          }
+          return o
+        }))
       } else if (action === 'reject') {
         const updated = await updateOrderStatus(orderId, 'rejected', extra)
-        setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...(updated || { status: 'rejected' }) } : o))
+        setOrders((prev) => prev.map((o) => {
+          if ((o._id || o.id) === orderId) {
+            const nextOrder = { ...o, ...(updated || { status: 'rejected' }) }
+            socket.emit('updateOrderStatus', { orderId, status: 'rejected' })
+            return nextOrder
+          }
+          return o
+        }))
+      } else if (action === 'shipped') {
+        const updated = await updateOrderStatus(orderId, 'shipped', extra)
+        setOrders((prev) => prev.map((o) => {
+          if ((o._id || o.id) === orderId) {
+            const nextOrder = { ...o, ...(updated || { status: 'shipped' }) }
+            socket.emit('updateOrderStatus', { orderId, status: 'shipped' })
+            return nextOrder
+          }
+          return o
+        }))
+      } else if (action === 'delivered') {
+        const updated = await updateOrderStatus(orderId, 'delivered', extra)
+        setOrders((prev) => prev.map((o) => {
+          if ((o._id || o.id) === orderId) {
+            const nextOrder = { ...o, ...(updated || { status: 'delivered' }) }
+            socket.emit('updateOrderStatus', { orderId, status: 'delivered' })
+            return nextOrder
+          }
+          return o
+        }))
       } else if (action === 'forward') {
-        const trader = traders.find((t) => (t._id || t.id) === extra.traderId)
-        const updated = await forwardOrderToTrader(orderId, extra)
-        setOrders((prev) => prev.map((o) =>
-          (o._id || o.id) === orderId
-            ? { ...o, ...(updated || { status: 'forwarded', assignedTrader: trader?.username || extra.traderId }) }
-            : o
-        ))
+        let payload = extra
+        let inferredTrader = null
+        if (extra?.autoAssign) {
+          inferredTrader = traders[0] || null
+          payload = { ...extra, traderId: inferredTrader?._id || inferredTrader?.id || null }
+        }
+
+        // Forward order via socket if specific trader selected or auto assigned to a valid trader
+        if (payload.traderId) {
+          socket.emit('forwardOrder', orderId, payload.traderId)
+          // Stamp forwardedAt so the countdown timer starts from this moment
+          setOrders((prev) => prev.map((o) =>
+            (o._id || o.id) === orderId ? { ...o, forwardedAt: new Date().toISOString() } : o
+          ))
+        }
       } else if (action === 'edit') {
         const updated = await updateOrderById(orderId, extra)
-        setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...(updated || extra) } : o))
+        setOrders((prev) => prev.map((o) => {
+          if ((o._id || o.id) === orderId) {
+            const nextOrder = { ...o, ...(updated || extra) }
+            socket.emit('updateOrderStatus', { orderId, status: nextOrder.status })
+            return nextOrder
+          }
+          return o
+        }))
       }
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Failed to update order.')
@@ -498,11 +715,11 @@ export default function AdminOrdersPage() {
   }
 
   const stats = {
-    total:     orders.length,
-    pending:   orders.filter((o) => o.status === 'pending').length,
-    accepted:  orders.filter((o) => o.status === 'accepted').length,
-    rejected:  orders.filter((o) => o.status === 'rejected').length,
-    forwarded: orders.filter((o) => o.status === 'forwarded').length,
+    total: orders.length,
+    pending: orders.filter((o) => o.status === 'pending').length,
+    accepted: orders.filter((o) => o.status === 'accepted').length,
+    rejected: orders.filter((o) => o.status === 'rejected').length,
+    shipped: orders.filter((o) => o.status === 'shipped').length,
   }
 
   const filtered = orders.filter((o) => {
@@ -516,104 +733,156 @@ export default function AdminOrdersPage() {
 
   return (
     <section className="orders-page-wrap container" dir="rtl">
-        {/* Header */}
-        <div className="orders-page-head">
-          <div>
-            <p className="orders-kicker">Admin Dashboard</p>
-            <h1>إدارة الطلبات</h1>
-            <p>راجع وأدر جميع طلبات المتجر من مكان واحد</p>
-          </div>
+      <BackNavigator fallback="/admin" />
+      {/* Header */}
+      <div className="orders-page-head">
+        <div>
+          <p className="orders-kicker">Admin Dashboard</p>
+          <h1>إدارة الطلبات</h1>
+          <p>عرض وإدارة جميع طلبات العملاء من مكان واحد</p>
         </div>
-        {error && (
-          <div className="orders-empty" style={{ minHeight: 'auto', marginBottom: 16 }}>
-            <h2>{error}</h2>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="orders-stats-strip">
-          <div className="orders-stat-card">
-            <span className="orders-stat-value">{stats.total}</span>
-            <span className="orders-stat-label">إجمالي الطلبات</span>
-          </div>
-          <div className="orders-stat-card is-amber">
-            <span className="orders-stat-value">{stats.pending}</span>
-            <span className="orders-stat-label">قيد الانتظار</span>
-          </div>
-          <div className="orders-stat-card is-green">
-            <span className="orders-stat-value">{stats.accepted}</span>
-            <span className="orders-stat-label">مقبولة</span>
-          </div>
-          <div className="orders-stat-card is-red">
-            <span className="orders-stat-value">{stats.rejected}</span>
-            <span className="orders-stat-label">مرفوضة</span>
-          </div>
-          <div className="orders-stat-card" style={{ '--stat-color': '#1d4ed8' }}>
-            <span className="orders-stat-value" style={{ color: '#1d4ed8' }}>{stats.forwarded}</span>
-            <span className="orders-stat-label">محوّلة</span>
-          </div>
+      </div>
+      {error && (
+        <div className="orders-empty" style={{ minHeight: 'auto', marginBottom: 16 }}>
+          <h2>{error}</h2>
         </div>
+      )}
 
-        {/* Filters */}
-        <div className="orders-filters">
-          <input
-            className="orders-search"
-            placeholder="ابحث باسم العميل، الهاتف، أو رقم الطلب…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            className="orders-filter-select"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+      {/* Stats */}
+      <div className="orders-stats-strip">
+        <div className="orders-stat-card">
+          <span className="orders-stat-value">{stats.total}</span>
+          <span className="orders-stat-label">إجمالي الطلبات</span>
+        </div>
+        <div className="orders-stat-card is-amber">
+          <span className="orders-stat-value">{stats.pending}</span>
+          <span className="orders-stat-label">قيد المراجعة</span>
+        </div>
+        <div className="orders-stat-card is-green">
+          <span className="orders-stat-value">{stats.accepted}</span>
+          <span className="orders-stat-label">مقبولة</span>
+        </div>
+        <div className="orders-stat-card is-red">
+          <span className="orders-stat-value">{stats.rejected}</span>
+          <span className="orders-stat-label">مرفوضة</span>
+        </div>
+        <div className="orders-stat-card" style={{ '--stat-color': '#1d4ed8' }}>
+          <span className="orders-stat-value" style={{ color: '#1d4ed8' }}>{stats.shipped}</span>
+          <span className="orders-stat-label">مشحونة</span>
+        </div>
+      </div>
+
+      <div className="orders-filters" style={{ flexWrap: 'wrap', gap: '12px' }}>
+        <input
+          className="orders-search"
+          placeholder="ابحث برقم الطلب أو اسم العميل أو رقم الهاتف…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="orders-filter-select"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="all">كل الطلبات</option>
+          <option value="pending">قيد المراجعة</option>
+          <option value="accepted">مقبول</option>
+          <option value="rejected">مرفوض</option>
+          <option value="shipped">تم الشحن</option>
+          <option value="cancelled">ملغي</option>
+          <option value="delivered">مُسلَّم</option>
+        </select>
+
+        {/* New API Filters */}
+        <select
+          className="orders-filter-select"
+          value={sortBy}
+          onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+        >
+          <option value="createdAt">تاريخ الطلب</option>
+          <option value="totalPrice">الإجمالي</option>
+        </select>
+        <select
+          className="orders-filter-select"
+          value={sortOrder}
+          onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
+        >
+          <option value="desc">الحداثة (تنازلي)</option>
+          <option value="asc">القِدم (تصاعدي)</option>
+        </select>
+        <select
+          className="orders-filter-select"
+          value={limit}
+          onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+        >
+          <option value={5}>5 طلبات / صفحة</option>
+          <option value={10}>10 طلبات / صفحة</option>
+          <option value={20}>20 طلبات / صفحة</option>
+          <option value={50}>50 طلبات / صفحة</option>
+        </select>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="orders-skeleton-list">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="orders-skeleton-card">
+              <div className="s-line s-lg shimmer" style={{ height: 18 }} />
+              <div className="s-line s-sm shimmer" />
+              <div className="s-line shimmer" style={{ width: '85%' }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty */}
+      {!loading && filtered.length === 0 && (
+        <div className="orders-empty">
+          <span className="orders-empty-icon">📭</span>
+          <h2>لا توجد طلبات</h2>
+          <p>لا توجد طلبات تطابق معايير البحث.</p>
+        </div>
+      )}
+
+      {/* List */}
+      {!loading && filtered.length > 0 && (
+        <div className="orders-list">
+          {filtered.map((o) => (
+            <AdminOrderCard
+              key={o._id || o.id}
+              order={o}
+              traders={traders}
+              onAction={handleAction}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '24px', alignItems: 'center' }}>
+          <button
+            className="ord-btn ord-btn-details"
+            style={{ padding: '8px 16px' }}
+            disabled={page <= 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
           >
-            <option value="all">كل الحالات</option>
-            <option value="pending">قيد الانتظار</option>
-            <option value="accepted">مقبول</option>
-            <option value="rejected">مرفوض</option>
-            <option value="forwarded">محوّل</option>
-            <option value="partial">جزئي</option>
-            <option value="delivered">مسلّم</option>
-          </select>
+            السابق
+          </button>
+          <span style={{ fontSize: '14px', fontWeight: '500', margin: '0 8px' }}>
+            صفحة {page} من {totalPages}
+          </span>
+          <button
+            className="ord-btn ord-btn-details"
+            style={{ padding: '8px 16px' }}
+            disabled={page >= totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            التالي
+          </button>
         </div>
-
-        {/* Loading */}
-        {loading && (
-          <div className="orders-skeleton-list">
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="orders-skeleton-card">
-                <div className="s-line s-lg shimmer" style={{ height: 18 }} />
-                <div className="s-line s-sm shimmer" />
-                <div className="s-line shimmer" style={{ width: '85%' }} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty */}
-        {!loading && filtered.length === 0 && (
-          <div className="orders-empty">
-            <span className="orders-empty-icon">📭</span>
-            <h2>لا توجد طلبات</h2>
-            <p>لا توجد طلبات تطابق هذا الفلتر.</p>
-          </div>
-        )}
-
-        {/* List */}
-        {!loading && filtered.length > 0 && (
-          <div className="orders-list">
-            {filtered.map((o) => (
-              <AdminOrderCard
-                key={o._id || o.id}
-                order={o}
-                traders={traders}
-                onAction={handleAction}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      )}
+    </section>
   )
 }
-

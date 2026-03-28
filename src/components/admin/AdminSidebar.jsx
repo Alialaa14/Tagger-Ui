@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { NavLink } from 'react-router-dom'
 
 const items = [
@@ -8,6 +8,7 @@ const items = [
   { to: '/admin/products', label: 'إدارة المنتجات' },
   { to: '/admin/notifications', label: 'إدارة الإشعارات' },
   { to: '/admin/users-online', label: 'إدارة المستخدمين' },
+  { to: '/admin/pages', label: 'تخصيص الواجهة' },
 ]
 
 export default function AdminSidebar({ open, onClose }) {

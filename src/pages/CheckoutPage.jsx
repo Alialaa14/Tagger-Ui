@@ -5,10 +5,11 @@ import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import socket from '../socket'
+import BackNavigator from '../components/common/BackNavigator'
 import './CheckoutPage.css'
 import "./CheckoutPage.extra.css"
 
-/* ── Field wrapper ───────────────────────────────────────────── */
+/* -- Field wrapper --------------------------------------------- */
 function Field({ label, id, error, children }) {
   return (
     <label className="checkout-field" htmlFor={id}>
@@ -19,7 +20,7 @@ function Field({ label, id, error, children }) {
   )
 }
 
-/* ── Summary row ─────────────────────────────────────────────── */
+/* -- Summary row ----------------------------------------------- */
 function SummaryRow({ label, value, isBold, isGreen, isSave }) {
   return (
     <div className={`checkout-sum-row${isBold ? ' checkout-sum-row-bold' : ''}${isGreen ? ' checkout-sum-row-green' : ''}${isSave ? ' checkout-sum-row-save' : ''}`}>
@@ -29,9 +30,9 @@ function SummaryRow({ label, value, isBold, isGreen, isSave }) {
   )
 }
 
-/* ── Step indicator ──────────────────────────────────────────── */
+/* -- Step indicator -------------------------------------------- */
 function Steps({ current }) {
-  const steps = ['السلة', 'التوصيل', 'تأكيد الطلب']
+  const steps = ['السلة', 'الشحن', 'تأكيد الطلب']
   return (
     <div className="checkout-steps" dir="rtl">
       {steps.map((s, i) => (
@@ -47,7 +48,7 @@ function Steps({ current }) {
   )
 }
 
-/* ── Payment option card ─────────────────────────────────────── */
+/* -- Payment option card --------------------------------------- */
 function PaymentOption({ value, selected, icon, title, subtitle, onChange }) {
   return (
     <label className={`checkout-pay-card${selected ? ' checkout-pay-card-active' : ''}`}>
@@ -69,7 +70,7 @@ function PaymentOption({ value, selected, icon, title, subtitle, onChange }) {
   )
 }
 
-/* ══════════════════════════════════════════════════════════════ */
+/* -------------------------------------------------------------- */
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
@@ -87,19 +88,19 @@ export default function CheckoutPage() {
   } = useCart()
 
   const [form, setForm] = useState({
-    username:      '',
-    shopName:      '',
-    phoneNumber:   '',
-    governorate:   '',
-    city:          '',
-    address:       '',
-    notes:         '',
+    username: '',
+    shopName: '',
+    phoneNumber: '',
+    governorate: '',
+    city: '',
+    address: '',
+    notes: '',
     paymentMethod: 'cash',
   })
 
-  // Track which fields were manually changed so we can show the ↺ reset button
-  const [edited, setEdited]       = useState({})
-  const [errors, setErrors]       = useState({})
+  // Track which fields were manually changed so we can show the ↩ reset button
+  const [edited, setEdited] = useState({})
+  const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -108,13 +109,13 @@ export default function CheckoutPage() {
     if (!user) return
     setForm((prev) => ({
       ...prev,
-      username:    user.username    || '',
-      shopName:    user.shopName    || '',
+      username: user.username || '',
+      shopName: user.shopName || '',
       phoneNumber: user.phoneNumber || '',
       governorate: user.governorate || '',
-      city:        user.city        || '',
-      address:     user.address     || '',
-      notes:       note             || '',
+      city: user.city || '',
+      address: user.address || '',
+      notes: note || '',
     }))
   }, [user, note])
 
@@ -129,12 +130,12 @@ export default function CheckoutPage() {
   // Revert a field to the original user profile value
   function resetField(field) {
     const original = {
-      username:    user?.username    || '',
-      shopName:    user?.shopName    || '',
+      username: user?.username || '',
+      shopName: user?.shopName || '',
       phoneNumber: user?.phoneNumber || '',
       governorate: user?.governorate || '',
-      city:        user?.city        || '',
-      address:     user?.address     || '',
+      city: user?.city || '',
+      address: user?.address || '',
     }
     setForm((f) => ({ ...f, [field]: original[field] ?? '' }))
     setEdited((ed) => ({ ...ed, [field]: false }))
@@ -143,12 +144,12 @@ export default function CheckoutPage() {
 
   function validate() {
     const e = {}
-    if (!form.username.trim())    e.username    = 'الاسم مطلوب'
+    if (!form.username.trim()) e.username = 'الاسم مطلوب'
     if (!form.phoneNumber.trim()) e.phoneNumber = 'رقم الهاتف مطلوب'
     else if (!/^01[0-9]{9}$/.test(form.phoneNumber.trim())) e.phoneNumber = 'رقم الهاتف غير صحيح (01xxxxxxxxx)'
     if (!form.governorate.trim()) e.governorate = 'المحافظة مطلوبة'
-    if (!form.city.trim())        e.city        = 'المدينة مطلوبة'
-    if (!form.address.trim())     e.address     = 'العنوان مطلوب'
+    if (!form.city.trim()) e.city = 'المدينة مطلوبة'
+    if (!form.address.trim()) e.address = 'العنوان مطلوب'
     return e
   }
 
@@ -156,8 +157,7 @@ export default function CheckoutPage() {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setIsSubmitting(true)
-    console.log("Submitting ....")
-    // 🔌 Wire your API order creation here:
+    // ← Wire your API order creation here:
     const orderPayload = {
       shopId: user?._id || user?.id,
       traderId: null,
@@ -180,7 +180,15 @@ export default function CheckoutPage() {
     }
     try {
       console.log(orderPayload)
-      socket.emit('createOrder', orderPayload)
+      socket.emit('sendOrder', {
+        order: orderPayload,
+        user: {
+          _id: user?._id || user?.id,
+          username: user?.username,
+          shopName: user?.shopName,
+          phoneNumber: user?.phoneNumber
+        }
+      })
     } catch (error) {
       console.log(`Socket Error ${error.message}`)
     }
@@ -189,16 +197,16 @@ export default function CheckoutPage() {
     setIsSubmitting(false)
   }
 
-  /* ── Success screen ────────────────────────────────────────── */
+  /* -- Success screen ------------------------------------------ */
   if (submitted) {
     return (
       <div className="home-page">
         <Navbar />
         <main className="container checkout-confirm-page" dir="rtl">
           <div className="checkout-confirm-card">
-            <div className="checkout-confirm-icon">🎉</div>
-            <h2>تم إرسال طلبك بنجاح!</h2>
-            <p>سنتواصل معك قريباً لتأكيد الطلب وتحديد موعد التوصيل.</p>
+            <div className="checkout-confirm-icon">✅</div>
+            <h2>تم تقديم طلبك بنجاح!</h2>
+            <p>سيتواصل معك فريقنا قريباً لتأكيد الطلب وترتيب عملية التوصيل.</p>
             <div className="checkout-confirm-actions">
               <Link to="/" className="btn btn-primary checkout-confirm-btn">العودة للرئيسية</Link>
             </div>
@@ -209,7 +217,7 @@ export default function CheckoutPage() {
     )
   }
 
-  /* ── Empty cart guard ──────────────────────────────────────── */
+  /* -- Empty cart guard ---------------------------------------- */
   if (lineItems.length === 0) {
     return (
       <div className="home-page">
@@ -218,7 +226,7 @@ export default function CheckoutPage() {
           <div className="checkout-confirm-card">
             <div className="checkout-confirm-icon">🛒</div>
             <h2>السلة فارغة</h2>
-            <p>أضف منتجات أولاً قبل إتمام الطلب.</p>
+            <p>لا توجد منتجات في سلة التسوق الخاصة بك.</p>
             <Link to="/" className="btn btn-primary">تصفح المنتجات</Link>
           </div>
         </main>
@@ -227,12 +235,13 @@ export default function CheckoutPage() {
     )
   }
 
-  /* ── Main page ─────────────────────────────────────────────── */
+  /* -- Main page ----------------------------------------------- */
   return (
     <div className="home-page">
       <Navbar />
 
       <main className="checkout-page container" dir="rtl">
+        <BackNavigator fallback="/cart" />
         <header className="checkout-page-head">
           <p className="checkout-kicker">Checkout</p>
           <h1>إتمام الطلب</h1>
@@ -242,13 +251,13 @@ export default function CheckoutPage() {
 
         <div className="checkout-layout">
 
-          {/* ══ Left col: form ══════════════════════════════════ */}
+          {/* -- Left col: form ---------------------------------- */}
           <div className="checkout-form-col">
 
             {/* Delivery details */}
             <div className="checkout-card">
               <h2 className="checkout-card-title">
-                <span className="checkout-card-icon">📍</span>
+                <span className="checkout-card-icon">📦</span>
                 بيانات التوصيل
               </h2>
 
@@ -262,11 +271,11 @@ export default function CheckoutPage() {
                       className={`checkout-input${errors.username ? ' checkout-input-error' : ''}`}
                       value={form.username}
                       onChange={change('username')}
-                      placeholder="اسمك الكامل"
+                      placeholder="اسم المستلم"
                       dir="rtl"
                     />
                     {edited.username && (
-                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('username')} title="استعادة القيمة الأصلية">↺</button>
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('username')} title="استعادة القيمة الأصلية">↩</button>
                     )}
                   </div>
                 </Field>
@@ -284,24 +293,24 @@ export default function CheckoutPage() {
                       inputMode="tel"
                     />
                     {edited.phoneNumber && (
-                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('phoneNumber')} title="استعادة القيمة الأصلية">↺</button>
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('phoneNumber')} title="استعادة القيمة الأصلية">↩</button>
                     )}
                   </div>
                 </Field>
 
-                {/* Shop name — full width */}
-                <Field label="اسم المتجر" id="shopName">
+                {/* Shop name – full width */}
+                <Field label="اسم المحل" id="shopName">
                   <div className="checkout-input-wrap checkout-input-full">
                     <input
                       id="shopName"
                       className="checkout-input"
                       value={form.shopName}
                       onChange={change('shopName')}
-                      placeholder="اسم متجرك"
+                      placeholder="اسم محلك"
                       dir="rtl"
                     />
                     {edited.shopName && (
-                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('shopName')} title="استعادة القيمة الأصلية">↺</button>
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('shopName')} title="استعادة القيمة الأصلية">↩</button>
                     )}
                   </div>
                 </Field>
@@ -318,13 +327,13 @@ export default function CheckoutPage() {
                       dir="rtl"
                     />
                     {edited.governorate && (
-                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('governorate')} title="استعادة القيمة الأصلية">↺</button>
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('governorate')} title="استعادة القيمة الأصلية">↩</button>
                     )}
                   </div>
                 </Field>
 
                 {/* City */}
-                <Field label="المدينة / المنطقة" id="city" error={errors.city}>
+                <Field label="المدينة / الحي" id="city" error={errors.city}>
                   <div className="checkout-input-wrap">
                     <input
                       id="city"
@@ -335,12 +344,12 @@ export default function CheckoutPage() {
                       dir="rtl"
                     />
                     {edited.city && (
-                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('city')} title="استعادة القيمة الأصلية">↺</button>
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('city')} title="استعادة القيمة الأصلية">↩</button>
                     )}
                   </div>
                 </Field>
 
-                {/* Address — full width */}
+                {/* Address – full width */}
                 <Field label="العنوان بالتفصيل" id="address" error={errors.address}>
                   <div className="checkout-input-wrap checkout-input-full">
                     <input
@@ -348,16 +357,16 @@ export default function CheckoutPage() {
                       className={`checkout-input${errors.address ? ' checkout-input-error' : ''}`}
                       value={form.address}
                       onChange={change('address')}
-                      placeholder="الشارع، رقم البناية، الدور، الشقة"
+                      placeholder="الشارع ورقم المبنى والدور والشقة"
                       dir="rtl"
                     />
                     {edited.address && (
-                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('address')} title="استعادة القيمة الأصلية">↺</button>
+                      <button type="button" className="checkout-reset-btn" onClick={() => resetField('address')} title="استعادة القيمة الأصلية">↩</button>
                     )}
                   </div>
                 </Field>
 
-                {/* Extra notes — full width */}
+                {/* Extra notes – full width */}
                 <Field label="ملاحظات إضافية (اختياري)" id="notes">
                   <textarea
                     id="notes"
@@ -373,7 +382,7 @@ export default function CheckoutPage() {
               </div>
 
               <p className="checkout-prefill-note">
-                ✏️ البيانات محمّلة تلقائياً من حسابك — يمكنك تعديل أي حقل لهذا الطلب، واضغط ↺ للعودة للقيمة الأصلية.
+                تم تعبئة البيانات تلقائياً من ملفك الشخصي — يمكنك تعديل أي حقل لهذا الطلب فقط دون تغيير بياناتك المحفوظة.
               </p>
             </div>
 
@@ -396,21 +405,21 @@ export default function CheckoutPage() {
                 <PaymentOption
                   value="wallet"
                   selected={form.paymentMethod === 'wallet'}
-                  icon="📲"
-                  title="المحفظة الرقمية"
-                  subtitle="فودافون كاش · اورنج كاش · إتصالات كاش"
+                  icon="📱"
+                  title="المحفظة الإلكترونية"
+                  subtitle="فودافون كاش — اتصالات كاش — أورنج كاش"
                   onChange={(v) => setForm((f) => ({ ...f, paymentMethod: v }))}
                 />
               </div>
 
               {form.paymentMethod === 'wallet' && (
                 <div className="checkout-wallet-info">
-                  <span className="checkout-wallet-info-icon">📋</span>
+                  <span className="checkout-wallet-info-icon">ℹ️</span>
                   <div>
-                    <p className="checkout-wallet-info-title">تعليمات الدفع بالمحفظة</p>
+                    <p className="checkout-wallet-info-title">تعليمات الدفع الإلكتروني</p>
                     <p className="checkout-wallet-info-body">
-                      بعد تأكيد الطلب سيتم إرسال رقم المحفظة إليك عبر رسالة نصية.
-                      يُرجى إرسال المبلغ وإرفاق صورة الإيصال.
+                      سيتم إرسال تفاصيل الدفع إليك عبر رسالة نصية بعد تأكيد طلبك.
+                      يرجى إتمام الدفع خلال الوقت المحدد لضمان معالجة طلبك.
                     </p>
                   </div>
                 </div>
@@ -418,7 +427,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* ══ Right col: order summary ═════════════════════════ */}
+          {/* -- Right col: order summary ------------------------- */}
           <div className="checkout-summary-col">
             <div className="checkout-card checkout-summary-card">
               <h2 className="checkout-card-title">
@@ -451,7 +460,7 @@ export default function CheckoutPage() {
 
               {totalDiscount > 0 && (
                 <SummaryRow
-                  label="خصم الكمية"
+                  label="خصم المنتجات"
                   value={`- ${totalDiscount?.toFixed(2)} ج.م`}
                   isSave
                 />
@@ -459,7 +468,7 @@ export default function CheckoutPage() {
 
               {couponCode && (
                 <div className="checkout-coupon-applied">
-                  <span>🏷️ كوبون: <strong>{couponCode}</strong></span>
+                  <span>كود الخصم: <strong>{couponCode}</strong></span>
                   {couponDiscount > 0 && (
                     <span className="checkout-coupon-code">- {couponDiscount?.toFixed(2)} ج.م</span>
                   )}
@@ -487,7 +496,7 @@ export default function CheckoutPage() {
               <div className="checkout-pay-badge">
                 {form.paymentMethod === 'cash'
                   ? <><span>💵</span> الدفع عند الاستلام</>
-                  : <><span>📲</span> المحفظة الرقمية</>}
+                  : <><span>📱</span> المحفظة الإلكترونية</>}
               </div>
 
               <button
@@ -495,10 +504,10 @@ export default function CheckoutPage() {
                 onClick={handleSubmit}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? <span className="checkout-spinner" /> : 'تأكيد الطلب →'}
+                {isSubmitting ? <span className="checkout-spinner" /> : 'تأكيد الطلب ✓'}
               </button>
 
-              <Link to="/cart" className="checkout-back-link">← العودة إلى السلة</Link>
+              <Link to="/cart" className="checkout-back-link">→ العودة إلى السلة</Link>
             </div>
           </div>
 

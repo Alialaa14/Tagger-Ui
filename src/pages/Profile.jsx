@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from '../utils/toast'
+import BackNavigator from '../components/common/BackNavigator'
 
 function toForm(user) {
   return {
@@ -62,6 +63,7 @@ export default function Profile() {
 
   return (
     <section className="auth-page" dir="rtl" lang="ar">
+      <BackNavigator className="is-floating" />
       <div className="auth-grid">
         <aside className="auth-hero">
           <div className="auth-hero__badge">الملف الشخصي</div>

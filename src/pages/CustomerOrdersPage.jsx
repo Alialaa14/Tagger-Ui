@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import axios from 'axios'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import NotificationsPanel from '../components/notifications/NotificationsPanel'
+import socket from '../socket'
+import BackNavigator from '../components/common/BackNavigator'
 import './orders.css'
 
 // ── Status config ─────────────────────────────────────────────
 const STATUS_MAP = {
-  pending:    { label: 'قيد الانتظار',    cls: 'status-pending',    icon: '⏳' },
-  accepted:   { label: 'مقبول',           cls: 'status-accepted',   icon: '✅' },
-  rejected:   { label: 'مرفوض',           cls: 'status-rejected',   icon: '❌' },
-  partial:    { label: 'مقبول جزئياً',    cls: 'status-partial',    icon: '⚠️' },
-  forwarded:  { label: 'محوّل لتاجر',     cls: 'status-forwarded',  icon: '📦' },
-  processing: { label: 'جار التنفيذ',     cls: 'status-processing', icon: '🔄' },
-  delivered:  { label: 'تم التسليم',      cls: 'status-delivered',  icon: '🎉' },
+  pending: { label: 'قيد الانتظار', cls: 'status-pending', icon: '⏳' },
+  accepted: { label: 'مقبول', cls: 'status-accepted', icon: '✅' },
+  rejected: { label: 'مرفوض', cls: 'status-rejected', icon: '❌' },
+  shipped: { label: 'تم الشحن', cls: 'status-forwarded', icon: '📦' },
+  delivered: { label: 'تم التسليم', cls: 'status-delivered', icon: '🎉' },
+  cancelled: { label: 'ملغي', cls: 'status-rejected', icon: '🚫' },
 }
 
 function statusMeta(s) {
@@ -24,13 +26,20 @@ function statusMeta(s) {
 // ── Format date ───────────────────────────────────────────────
 function fmtDate(d) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('ar-EG', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  })
+  const dateObj = new Date(d);
+  if (isNaN(dateObj)) return '—';
+  return dateObj.toLocaleString('ar-EG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
 }
 
 // ── Single customer order card ────────────────────────────────
-function CustomerOrderCard({ order }) {
+function CustomerOrderCard({ order, onCancel }) {
   const [expanded, setExpanded] = useState(false)
   const sm = statusMeta(order.status)
 
@@ -51,30 +60,32 @@ function CustomerOrderCard({ order }) {
       <div className="order-card-info">
         <div className="order-info-item">
           <span className="order-info-label">عدد الأصناف</span>
-          <span className="order-info-value">{order.items?.length ?? '—'}</span>
+          <span className="order-info-value">{order.products?.length ?? '—'}</span>
         </div>
         <div className="order-info-item">
           <span className="order-info-label">إجمالي الكمية</span>
           <span className="order-info-value">
-            {order.items?.reduce((s, i) => s + (i.quantity || 0), 0) ?? '—'}
+            {order.totalQuantity ?? order.products?.reduce((s, i) => s + (i.quantity || 0), 0) ?? '—'}
           </span>
         </div>
         <div className="order-info-item">
           <span className="order-info-label">الإجمالي</span>
           <span className="order-info-value is-green">
-            {order.finalTotal?.toFixed(2) ?? order.total?.toFixed(2) ?? '—'} ج.م
+            {order.totalPrice?.toFixed(2) ?? '—'} ج.م
           </span>
         </div>
-        {order.city && (
+        {order.address && (
           <div className="order-info-item">
-            <span className="order-info-label">المدينة</span>
-            <span className="order-info-value">{order.city}</span>
+            <span className="order-info-label">العنوان</span>
+            <span className="order-info-value">{order.address}</span>
           </div>
         )}
-        {order.couponCode && (
+        {order.coupon && (
           <div className="order-info-item">
             <span className="order-info-label">كوبون</span>
-            <span className="order-info-value" style={{ fontSize: 11 }}>{order.couponCode}</span>
+            <span className="order-info-value" style={{ fontSize: 11 }}>
+              {typeof order.coupon === 'object' ? order.coupon.name : order.coupon}
+            </span>
           </div>
         )}
         {order.paymentMethod && (
@@ -88,27 +99,27 @@ function CustomerOrderCard({ order }) {
       </div>
 
       {/* Order note */}
-      {order.orderNote && (
+      {order.note && (
         <div className="order-note">
           <span className="order-note-icon">📝</span>
-          <span>{order.orderNote}</span>
+          <span>{order.note}</span>
         </div>
       )}
 
       {/* Products expandable */}
-      {order.items?.length > 0 && (
+      {order.products?.length > 0 && (
         <>
           {expanded && (
             <div className="order-products-list">
               <p className="order-products-list-title">المنتجات</p>
-              {order.items.map((it, i) => (
-                <div key={i} className="order-product-row">
+              {order.products.map((it, i) => (
+                <div key={it._id || i} className="order-product-row">
                   <span className="order-product-name">
-                    {it.product?.name || it.productId || `منتج ${i + 1}`}
+                    {it.productId?.name || `منتج ${i + 1}`}
                   </span>
                   <span className="order-product-qty">× {it.quantity}</span>
                   <span className="order-product-price">
-                    {it.lineTotal?.toFixed(2) ?? '—'} ج.م
+                    {it.totalPrice?.toFixed(2) ?? '—'} ج.م
                   </span>
                 </div>
               ))}
@@ -121,8 +132,28 @@ function CustomerOrderCard({ order }) {
             >
               {expanded ? '▲ إخفاء المنتجات' : '▼ عرض المنتجات'}
             </button>
+            {order.status === 'pending' && (
+              <button
+                className="ord-btn ord-btn-reject"
+                onClick={() => onCancel(order._id || order.id)}
+              >
+                🚫 إلغاء الطلب
+              </button>
+            )}
           </div>
         </>
+      )}
+
+      {/* If no products, still show cancel button if pending */}
+      {(!order.products || order.products.length === 0) && order.status === 'pending' && (
+        <div className="order-card-actions">
+          <button
+            className="ord-btn ord-btn-reject"
+            onClick={() => onCancel(order._id || order.id)}
+          >
+            🚫 إلغاء الطلب
+          </button>
+        </div>
       )}
     </article>
   )
@@ -131,21 +162,85 @@ function CustomerOrderCard({ order }) {
 // ── Page ──────────────────────────────────────────────────────
 export default function CustomerOrdersPage() {
   const { user } = useAuth()
-  const [orders, setOrders]   = useState([])
+  const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState('')
-  const [filter, setFilter]   = useState('all')
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    // 🔌 Replace with your real API call:
-    // const res = await axios.get('/api/v1/order/my', { withCredentials: true })
-    // setOrders(res.data.data || [])
-    const timer = setTimeout(() => {
-      setOrders(SAMPLE_CUSTOMER_ORDERS)
-      setLoading(false)
-    }, 600)
-    return () => clearTimeout(timer)
+    async function fetchOrders() {
+      if (!user) {
+        setLoading(false)
+        return
+      }
+      setLoading(true)
+      try {
+        const userId = user._id || user.id
+        const res = await axios.get('http://localhost:3000/api/v1/order', {
+          params: { userId, limit, page, sortBy, sortOrder },
+          withCredentials: true
+        })
+
+        const fetchedOrders = res.data?.data || res.data?.orders || res.data?.results || []
+        setOrders(fetchedOrders)
+
+        const totalItems = res.data?.total || res.data?.count || 0
+        if (totalItems > 0 && limit > 0) {
+          setTotalPages(Math.ceil(totalItems / limit))
+        } else if (res.data?.totalPages) {
+          setTotalPages(res.data.totalPages)
+        } else {
+          setTotalPages(1) // fallback
+        }
+      } catch (err) {
+        console.error('Failed to fetch orders:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchOrders()
+  }, [user, page, limit, sortBy, sortOrder])
+
+  useEffect(() => {
+    function handleUpdate(payload) {
+      const orderId = payload?.orderId || payload?.order?._id || payload?.order?.id || payload?._id || payload?.id
+      const newStatus = payload?.status || payload?.order?.status || payload?.status
+
+      if (!orderId || !newStatus) return
+
+      setOrders((prev) => prev.map((o) => {
+        if ((o._id || o.id) === orderId) {
+          return { ...o, status: newStatus }
+        }
+        return o
+      }))
+    }
+
+    socket.on('updateOrderStatus', handleUpdate)
+    return () => {
+      socket.off('updateOrderStatus', handleUpdate)
+    }
   }, [])
+
+  async function handleCancelOrder(orderId) {
+    // 🔌 Optional: Wire your API here e.g.:
+    // await axios.patch(`/api/v1/order/${orderId}/status`, { status: "cancelled" }, { withCredentials: true })
+
+    setOrders((prev) => prev.map((o) => {
+      if ((o._id || o.id) === orderId) {
+        const nextOrder = { ...o, status: 'cancelled' }
+        socket.emit('updateOrderStatus', { orderId, status: 'cancelled' })
+        return nextOrder
+      }
+      return o
+    }))
+  }
 
   const filtered = orders.filter((o) => {
     const matchSearch = !search || String(o._id || o.id).includes(search)
@@ -158,6 +253,7 @@ export default function CustomerOrdersPage() {
       <Navbar />
 
       <main className="orders-page-wrap container" dir="rtl">
+        <BackNavigator fallback="/profile" />
         {/* Header */}
         <div className="orders-page-head">
           <div>
@@ -173,7 +269,7 @@ export default function CustomerOrdersPage() {
         <NotificationsPanel title="إشعاراتي" />
 
         {/* Filters */}
-        <div className="orders-filters">
+        <div className="orders-filters" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <input
             className="orders-search"
             placeholder="ابحث برقم الطلب…"
@@ -189,8 +285,37 @@ export default function CustomerOrdersPage() {
             <option value="pending">قيد الانتظار</option>
             <option value="accepted">مقبول</option>
             <option value="rejected">مرفوض</option>
-            <option value="partial">جزئي</option>
+            <option value="cancelled">ملغي</option>
+            <option value="shipped">تم الشحن</option>
             <option value="delivered">تم التسليم</option>
+          </select>
+
+          {/* New API Filters */}
+          <select
+            className="orders-filter-select"
+            value={sortBy}
+            onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+          >
+            <option value="createdAt">تاريخ الطلب</option>
+            <option value="totalPrice">الإجمالي</option>
+          </select>
+          <select
+            className="orders-filter-select"
+            value={sortOrder}
+            onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
+          >
+            <option value="desc">الحداثة (تنازلي)</option>
+            <option value="asc">القِدم (تصاعدي)</option>
+          </select>
+          <select
+            className="orders-filter-select"
+            value={limit}
+            onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+          >
+            <option value={5}>5 طلبات / صفحة</option>
+            <option value={10}>10 طلبات / صفحة</option>
+            <option value={20}>20 طلبات / صفحة</option>
+            <option value={50}>50 طلبات / صفحة</option>
           </select>
         </div>
 
@@ -207,8 +332,8 @@ export default function CustomerOrdersPage() {
           </div>
         )}
 
-        {/* Empty */}
-        {!loading && filtered.length === 0 && (
+        {/* Empty Content */}
+        {!loading && orders.length === 0 && (
           <div className="orders-empty">
             <span className="orders-empty-icon">📭</span>
             <h2>لا توجد طلبات</h2>
@@ -219,12 +344,48 @@ export default function CustomerOrdersPage() {
           </div>
         )}
 
+        {/* Local UI Filter returned no results */}
+        {!loading && orders.length > 0 && filtered.length === 0 && (
+          <div className="orders-empty" style={{ padding: '2rem 1rem' }}>
+            <span className="orders-empty-icon">🔍</span>
+            <h2>لا توجد طلبات مطابقة للبحث/التصفية</h2>
+            <button className="ord-btn ord-btn-details" onClick={() => { setSearch(''); setFilter('all'); }}>
+              مسح الفلاتر المحلية
+            </button>
+          </div>
+        )}
+
         {/* List */}
         {!loading && filtered.length > 0 && (
           <div className="orders-list">
             {filtered.map((o) => (
-              <CustomerOrderCard key={o._id || o.id} order={o} />
+              <CustomerOrderCard key={o._id || o.id} order={o} onCancel={handleCancelOrder} />
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalPages > 1 && (
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '24px', alignItems: 'center' }}>
+            <button
+              className="ord-btn ord-btn-details"
+              style={{ padding: '8px 16px' }}
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              السابق
+            </button>
+            <span style={{ fontSize: '14px', fontWeight: '500', margin: '0 8px' }}>
+              صفحة {page} من {totalPages}
+            </span>
+            <button
+              className="ord-btn ord-btn-details"
+              style={{ padding: '8px 16px' }}
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              التالي
+            </button>
           </div>
         )}
       </main>
@@ -233,44 +394,3 @@ export default function CustomerOrdersPage() {
     </div>
   )
 }
-
-// ── Sample data (remove when wiring real API) ─────────────────
-const SAMPLE_CUSTOMER_ORDERS = [
-  {
-    _id: 'ORD-1001',
-    status: 'delivered',
-    createdAt: '2024-12-10T10:00:00Z',
-    finalTotal: 850,
-    city: 'القاهرة',
-    paymentMethod: 'cash',
-    couponCode: 'SAVE10',
-    orderNote: 'الباب الخلفي للمبنى من فضلك',
-    items: [
-      { productId: 'p1', product: { name: 'هاتف ذكي A50' }, quantity: 1, lineTotal: 700 },
-      { productId: 'p2', product: { name: 'سماعة بلوتوث' }, quantity: 2, lineTotal: 150 },
-    ],
-  },
-  {
-    _id: 'ORD-1002',
-    status: 'pending',
-    createdAt: '2025-01-20T14:30:00Z',
-    finalTotal: 320,
-    city: 'الإسكندرية',
-    paymentMethod: 'transfer',
-    items: [
-      { productId: 'p3', product: { name: 'شاشة LCD 24"' }, quantity: 1, lineTotal: 320 },
-    ],
-  },
-  {
-    _id: 'ORD-1003',
-    status: 'partial',
-    createdAt: '2025-02-05T09:00:00Z',
-    finalTotal: 560,
-    city: 'الجيزة',
-    paymentMethod: 'cash',
-    items: [
-      { productId: 'p4', product: { name: 'لابتوب مستعمل' }, quantity: 1, lineTotal: 500 },
-      { productId: 'p5', product: { name: 'ماوس لاسلكي' }, quantity: 2, lineTotal: 60 },
-    ],
-  },
-]

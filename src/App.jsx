@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -11,6 +11,7 @@ import ProductManager from './pages/admin/ProductManager'
 import CategoryManager from './pages/admin/CategoryManager'
 import UsersOnline from './pages/admin/UsersOnline'
 import NotificationsPage from './pages/admin/NotificationsPage'
+import PageSettings from './pages/admin/PageSettings'
 import Home from './pages/Home'
 import CategoriesPage from './pages/CategoriesPage'
 import CategoryPage from './pages/CategoryPage'
@@ -22,6 +23,8 @@ import { RequireAdmin, RequireAuth } from './components/RouteGuards'
 import CheckoutPage from "./pages/CheckoutPage"
 import CustomerOrdersPage from "./pages/CustomerOrdersPage"
 import TraderOrdersPage from "./pages/TraderOrdersPage"
+import TraderNotificationsPage from "./pages/TraderNotificationsPage"
+import TraderChatPage from "./pages/TraderChatPage"
 import AdminOrdersPage from "./pages/AdminOrdersPage"
 export default function App() {
   return (
@@ -43,6 +46,8 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders"    element={<CustomerOrdersPage />} />
             <Route path="/trader/orders" element={<TraderOrdersPage />} />
+            <Route path="/trader/notifications" element={<TraderNotificationsPage />} />
+            <Route path="/trader/chat" element={<TraderChatPage />} />
           </Route>
 
           <Route element={<RequireAdmin />}>
@@ -53,6 +58,7 @@ export default function App() {
               <Route path="products" element={<ProductManager />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="users-online" element={<UsersOnline />} />
+              <Route path="pages" element={<PageSettings />} />
             </Route>
           </Route>
 

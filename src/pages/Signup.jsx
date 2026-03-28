@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import toast from '../utils/toast'
-import { refreshAuthFromCookies } from '../socket'
 import { useAuth } from '../context/AuthContext'
+import BackNavigator from '../components/common/BackNavigator'
+import axios from 'axios'
 
 const initialForm = {
   username: '',
@@ -69,7 +69,7 @@ export default function Signup() {
       if (role) localStorage.setItem('user_role', String(role).toLowerCase())
       else localStorage.removeItem('user_role')
 
-     
+
       await refreshUser()
       toast(res.message || 'تم إنشاء الحساب', 'success')
       navigate('/')
@@ -82,6 +82,7 @@ export default function Signup() {
 
   return (
     <section className="auth-page" dir="rtl" lang="ar">
+      <BackNavigator className="is-floating" />
       <div className="auth-grid">
         <aside className="auth-hero">
           <div className="auth-hero__badge">منصة تجارة عربية</div>

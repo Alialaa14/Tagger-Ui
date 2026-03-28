@@ -1,116 +1,38 @@
 import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import NotificationsPanel from '../components/notifications/NotificationsPanel'
+import socket, { onSendOrder, offSendOrder } from '../socket'
+import axios from 'axios'
+import BackNavigator from '../components/common/BackNavigator'
+import notificationSound from '../assets/tritone.mp3'
+import useCountdown from '../hooks/useCountdown'
 import './orders.css'
 
 // ── Status config ─────────────────────────────────────────────
 const STATUS_MAP = {
-  pending:    { label: 'قيد الانتظار',   cls: 'status-pending',    icon: '⏳' },
-  accepted:   { label: 'مقبول',          cls: 'status-accepted',   icon: '✅' },
-  rejected:   { label: 'مرفوض',          cls: 'status-rejected',   icon: '❌' },
-  partial:    { label: 'مقبول جزئياً',   cls: 'status-partial',    icon: '⚠️' },
+  pending: { label: 'قيد الانتظار', cls: 'status-pending', icon: '⏳' },
+  accepted: { label: 'مقبول', cls: 'status-accepted', icon: '✅' },
+  rejected: { label: 'مرفوض', cls: 'status-rejected', icon: '❌' },
+  shipped: { label: 'تم الشحن', cls: 'status-forwarded', icon: '📦' },
+  delivered: { label: 'تم التسليم', cls: 'status-delivered', icon: '🚚' },
+  cancelled: { label: 'ملغي', cls: 'status-rejected', icon: '🚫' },
 }
 function statusMeta(s) { return STATUS_MAP[s] || { label: s, cls: 'status-pending', icon: '•' } }
 function fmtDate(d) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
-}
-
-// ── Partial Reject Modal ──────────────────────────────────────
-function PartialRejectModal({ order, onClose, onConfirm }) {
-  const [items, setItems] = useState(
-    (order.items || []).map((it) => ({ ...it, accepted: true, acceptedQty: it.quantity }))
-  )
-  const [reason, setReason] = useState('')
-
-  function toggle(i) {
-    setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, accepted: !it.accepted } : it))
-  }
-
-  function changeQty(i, val) {
-    setItems((prev) => prev.map((it, idx) =>
-      idx === i ? { ...it, acceptedQty: Math.max(1, Math.min(it.quantity, Number(val))) } : it
-    ))
-  }
-
-  return (
-    <div className="orders-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="orders-modal" dir="rtl">
-        <div className="orders-modal-head">
-          <div>
-            <h3>⚠️ قبول جزئي للطلب</h3>
-            <p>حدّد المنتجات والكميات التي يمكن توفيرها.</p>
-          </div>
-          <button className="orders-modal-close" onClick={onClose}>✕</button>
-        </div>
-
-        {/* Items checklist */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {items.map((it, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px',
-              background: it.accepted ? 'var(--g50, #f0fdf4)' : '#fff1f2',
-              border: `1.5px solid ${it.accepted ? 'rgba(22,163,74,.15)' : 'rgba(220,38,38,.15)'}`,
-              borderRadius: 12,
-            }}>
-              <input
-                type="checkbox"
-                checked={it.accepted}
-                onChange={() => toggle(i)}
-                style={{ width: 16, height: 16, accentColor: '#16a34a', flexShrink: 0 }}
-              />
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
-                {it.product?.name || it.productId || `منتج ${i + 1}`}
-              </span>
-              {it.accepted && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>الكمية:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={it.quantity}
-                    value={it.acceptedQty}
-                    onChange={(e) => changeQty(i, e.target.value)}
-                    style={{
-                      width: 56, minHeight: 32, border: '1.5px solid rgba(22,163,74,.20)',
-                      borderRadius: 8, padding: '0 8px', fontFamily: 'Cairo, sans-serif',
-                      fontSize: 13, fontWeight: 800, outline: 'none',
-                      color: 'var(--g700, #15803d)',
-                    }}
-                  />
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>/ {it.quantity}</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Reason */}
-        <label className="orders-modal-label">
-          <span>سبب الرفض الجزئي (اختياري)</span>
-          <textarea
-            className="orders-modal-textarea"
-            placeholder="مثال: المنتج غير متوفر حالياً بالكمية المطلوبة…"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </label>
-
-        <div className="orders-modal-actions">
-          <button className="ord-btn ord-btn-details" onClick={onClose}>إلغاء</button>
-          <button
-            className="ord-btn ord-btn-partial"
-            onClick={() => onConfirm({ items, reason })}
-          >
-            تأكيد القبول الجزئي
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+  const dateObj = new Date(d);
+  if (isNaN(dateObj)) return '—';
+  return dateObj.toLocaleString('ar-EG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
 }
 
 // ── Reject Reason Modal ───────────────────────────────────────
@@ -146,13 +68,37 @@ function RejectModal({ onClose, onConfirm }) {
   )
 }
 
+// ── Order countdown timer ─────────────────────────────────────
+function OrderCountdown({ createdAt }) {
+  const remaining = useCountdown(createdAt, 5_000)
+  if (remaining <= 0) return null
+
+  const pct = (remaining / 5) * 100
+  const color = remaining <= 2 ? '#ef4444' : remaining <= 3 ? '#f59e0b' : '#3b82f6'
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0')
+  const ss = String(remaining % 60).padStart(2, '0')
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, fontSize: 12, fontWeight: 700, color }}>
+        <span>⏱ وقت متبقٍّ للمعالجة</span>
+        <span dir="ltr">{mm}:{ss}</span>
+      </div>
+      <div style={{ height: 5, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 99, transition: 'width 1s linear, background 0.3s' }} />
+      </div>
+    </div>
+  )
+}
+
 // ── Trader order card ─────────────────────────────────────────
 function TraderOrderCard({ order, onAction }) {
-  const [showReject, setShowReject]   = useState(false)
+  const [showReject, setShowReject] = useState(false)
   const [showPartial, setShowPartial] = useState(false)
   const sm = statusMeta(order.status)
-  const isActable = order.status === 'pending' || order.status === 'forwarded'
 
+  const isActable = order.status === 'pending'
+  console.log(order.status)
   return (
     <>
       <article className="order-card" dir="rtl">
@@ -166,34 +112,12 @@ function TraderOrderCard({ order, onAction }) {
 
         <div className="order-card-info">
           <div className="order-info-item">
-            <span className="order-info-label">اسم العميل</span>
-            <span className="order-info-value">{order.customerName || '—'}</span>
-          </div>
-          <div className="order-info-item">
-            <span className="order-info-label">رقم الهاتف</span>
-            <span className="order-info-value">{order.customerPhone || '—'}</span>
-          </div>
-          <div className="order-info-item">
             <span className="order-info-label">عدد الأصناف</span>
             <span className="order-info-value">{order.items?.length ?? '—'}</span>
           </div>
-          <div className="order-info-item">
-            <span className="order-info-label">الإجمالي</span>
-            <span className="order-info-value is-green">
-              {order.finalTotal?.toFixed(2) ?? '—'} ج.م
-            </span>
-          </div>
-          <div className="order-info-item">
-            <span className="order-info-label">العنوان</span>
-            <span className="order-info-value">{order.address || '—'}</span>
-          </div>
-          <div className="order-info-item">
-            <span className="order-info-label">الدفع</span>
-            <span className="order-info-value">
-              {order.paymentMethod === 'cash' ? 'عند الاستلام' : (order.paymentMethod || '—')}
-            </span>
-          </div>
         </div>
+
+        <OrderCountdown createdAt={order.receivedAt} />
 
         {order.orderNote && (
           <div className="order-note">
@@ -205,15 +129,23 @@ function TraderOrderCard({ order, onAction }) {
         {order.items?.length > 0 && (
           <div className="order-products-list">
             <p className="order-products-list-title">المنتجات</p>
-            {order.items.map((it, i) => (
-              <div key={i} className="order-product-row">
-                <span className="order-product-name">
-                  {it.product?.name || it.productId || `منتج ${i + 1}`}
-                </span>
-                <span className="order-product-qty">× {it.quantity}</span>
-                <span className="order-product-price">{it.lineTotal?.toFixed(2) ?? '—'} ج.م</span>
-              </div>
-            ))}
+            {order.items.map((it, i) => {
+              const prodObj = typeof it.productId === 'object' && it.productId ? it.productId : (typeof it.product === 'object' && it.product ? it.product : null);
+              const productName = prodObj?.name || (typeof it.productId === 'string' ? it.productId : `منتج ${i + 1}`);
+              const productImage = prodObj?.image?.url || prodObj?.image || null;
+
+              return (
+                <div key={i} className="order-product-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
+                  {productImage ? (
+                    <img src={productImage} alt={productName} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>📦</div>
+                  )}
+                  <span className="order-product-name" style={{ flex: 1 }}>{productName}</span>
+                  <span className="order-product-qty" style={{ fontWeight: 800 }}>× {it.quantity}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -225,12 +157,6 @@ function TraderOrderCard({ order, onAction }) {
                 onClick={() => onAction(order._id || order.id, 'accept')}
               >
                 ✅ قبول الطلب
-              </button>
-              <button
-                className="ord-btn ord-btn-partial"
-                onClick={() => setShowPartial(true)}
-              >
-                ⚠️ قبول جزئي
               </button>
               <button
                 className="ord-btn ord-btn-reject"
@@ -256,17 +182,6 @@ function TraderOrderCard({ order, onAction }) {
           }}
         />
       )}
-
-      {showPartial && (
-        <PartialRejectModal
-          order={order}
-          onClose={() => setShowPartial(false)}
-          onConfirm={(data) => {
-            onAction(order._id || order.id, 'partial', data)
-            setShowPartial(false)
-          }}
-        />
-      )}
     </>
   )
 }
@@ -274,39 +189,149 @@ function TraderOrderCard({ order, onAction }) {
 // ── Page ──────────────────────────────────────────────────────
 export default function TraderOrdersPage() {
   const { user } = useAuth()
-  const [orders, setOrders]   = useState([])
+  const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState('')
-  const [filter, setFilter]   = useState('all')
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+
+  const location = useLocation()
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const filterParam = params.get('filter')
+    if (filterParam) {
+      setFilter(filterParam)
+    }
+  }, [location.search])
+
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    // 🔌 Replace with: axios.get('/api/v1/order/trader', { withCredentials: true })
-    setTimeout(() => {
-      setOrders(SAMPLE_TRADER_ORDERS)
-      setLoading(false)
-    }, 600)
+    if (!user || !user._id) return
+    let active = true
+    setLoading(true)
+    setError('')
+    console.log(user._id)
+    axios.get('http://localhost:3000/api/v1/order', {
+      params: { userId: user._id, limit, page, sortBy, sortOrder },
+      withCredentials: true
+    })
+      .then((res) => {
+        if (!active) return
+        const data = res.data?.data || res.data?.orders || res.data?.results || res.data || []
+        const totalItems = res.data?.total || res.data?.count || data.length
+        if (totalItems > 0 && limit > 0) setTotalPages(Math.ceil(totalItems / limit))
+        else if (res.data?.totalPages) setTotalPages(res.data.totalPages)
+
+        const normalized = data.map(rawOrder => ({
+          ...rawOrder,
+          items: rawOrder.items || rawOrder.products || [],
+          finalTotal: rawOrder.finalTotal ?? rawOrder.totalPrice ?? 0,
+          customerName: rawOrder.customerName || rawOrder.username || '—',
+          customerPhone: rawOrder.customerPhone || rawOrder.phoneNumber || '—',
+          orderNote: rawOrder.orderNote || rawOrder.note || '',
+          createdAt: rawOrder.createdAt || new Date().toISOString(),
+        }))
+        setOrders(normalized)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (!active) return
+        setError(err?.response?.data?.message || err?.message || 'Failed to fetch orders.')
+        setLoading(false)
+      })
+
+    return () => { active = false }
+  }, [user, page, limit, sortBy, sortOrder])
+
+  useEffect(() => {
+    function playAudio() {
+      try {
+        const audio = new Audio(notificationSound);
+        audio.play().catch(e => console.error('Audio play failed:', e));
+      } catch (err) {
+        console.error('Audio error:', err);
+      }
+    }
+    
+    function handleNewOrder(payload, isNew = false) {
+      if (isNew) playAudio();
+      
+      console.log(payload)
+      const rawOrder = payload?.order || payload
+      const payloadUser = payload?.user || rawOrder?.user || rawOrder?.shop || null;
+      // Provide fallback properties if nested fields are missing so UI doesnt crash on new orders
+      const normalizedOrder = {
+        ...rawOrder,
+        items: rawOrder.items || rawOrder.products || [],
+        finalTotal: rawOrder.finalTotal ?? rawOrder.totalPrice ?? 0,
+        customerName: payloadUser?.username || payloadUser?.shopName || rawOrder.customerName || rawOrder.username || '—',
+        customerPhone: payloadUser?.phoneNumber || rawOrder.customerPhone || rawOrder.phoneNumber || '—',
+        orderNote: rawOrder.orderNote || rawOrder.note || '',
+        createdAt: rawOrder.createdAt || new Date().toISOString(),
+        // stamp the moment this order arrives so the countdown starts from now
+        receivedAt: isNew ? new Date().toISOString() : undefined,
+      }
+
+      setOrders((prev) => {
+        const existingIdx = prev.findIndex((o) => (o._id || o.id) === (normalizedOrder._id || normalizedOrder.id))
+        if (existingIdx >= 0) {
+          const next = [...prev]
+          // preserve receivedAt from the existing entry if this is just a status update
+          next[existingIdx] = { ...next[existingIdx], ...normalizedOrder, receivedAt: next[existingIdx].receivedAt || normalizedOrder.receivedAt }
+          return next
+        }
+        return [normalizedOrder, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      })
+    }
+
+    function handleOrderUnassigned({ orderId }) {
+      if (!orderId) return
+      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId))
+    }
+
+    socket.on('sendOrder', (data) => handleNewOrder(data, true))
+    socket.on('updateOrderStatus', (data) => handleNewOrder(data, false))
+    socket.on('orderUnassigned', handleOrderUnassigned)
+    if (onSendOrder) onSendOrder((data) => handleNewOrder(data, true))
+
+    return () => {
+      socket.off('sendOrder')
+      socket.off('updateOrderStatus')
+      socket.off('orderUnassigned', handleOrderUnassigned)
+      if (offSendOrder) offSendOrder()
+    }
   }, [])
 
   function handleAction(orderId, action, extra = {}) {
     console.log('Trader action:', action, 'on order:', orderId, extra)
     // 🔌 Wire your API here e.g.:
     // await axios.patch(`/api/v1/order/${orderId}/status`, { status: action, ...extra }, { withCredentials: true })
-    setOrders((prev) => prev.map((o) =>
-      (o._id || o.id) === orderId ? { ...o, status: action === 'accept' ? 'accepted' : action === 'reject' ? 'rejected' : 'partial' } : o
-    ))
+    setOrders((prev) => prev.map((o) => {
+      if ((o._id || o.id) === orderId) {
+        const nextStatus = action === 'accept' ? 'accepted' : 'rejected'
+        const nextOrder = { ...o, status: nextStatus }
+        socket.emit('updateOrderStatus', { orderId, status: nextStatus })
+        return nextOrder
+      }
+      return o
+    }))
   }
 
   const stats = {
-    total:    orders.length,
-    pending:  orders.filter((o) => o.status === 'pending').length,
+    total: orders.length,
+    pending: orders.filter((o) => o.status === 'pending').length,
     accepted: orders.filter((o) => o.status === 'accepted').length,
     rejected: orders.filter((o) => o.status === 'rejected').length,
+    shipped: orders.filter((o) => o.status === 'shipped').length,
   }
 
   const filtered = orders.filter((o) => {
-    const matchSearch = !search ||
-      String(o._id || o.id).includes(search) ||
-      (o.customerName || '').includes(search)
+    const matchSearch = !search || String(o._id || o.id).includes(search)
     const matchFilter = filter === 'all' || o.status === filter
     return matchSearch && matchFilter
   })
@@ -316,6 +341,7 @@ export default function TraderOrdersPage() {
       <Navbar />
 
       <main className="orders-page-wrap container" dir="rtl">
+        <BackNavigator fallback="/profile" />
         {/* Header */}
         <div className="orders-page-head">
           <div>
@@ -348,10 +374,10 @@ export default function TraderOrdersPage() {
         </div>
 
         {/* Filters */}
-        <div className="orders-filters">
+        <div className="orders-filters" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <input
             className="orders-search"
-            placeholder="ابحث باسم العميل أو رقم الطلب…"
+            placeholder="ابحث برقم الطلب…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -364,9 +390,44 @@ export default function TraderOrdersPage() {
             <option value="pending">قيد الانتظار</option>
             <option value="accepted">مقبول</option>
             <option value="rejected">مرفوض</option>
-            <option value="partial">جزئي</option>
+            <option value="shipped">تم الشحن</option>
+            <option value="delivered">مُسلَّم</option>
+            <option value="cancelled">ملغي</option>
+          </select>
+
+          {/* New API Filters */}
+          <select
+            className="orders-filter-select"
+            value={sortBy}
+            onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+          >
+            <option value="createdAt">تاريخ الطلب</option>
+          </select>
+          <select
+            className="orders-filter-select"
+            value={sortOrder}
+            onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
+          >
+            <option value="desc">الحداثة (تنازلي)</option>
+            <option value="asc">القِدم (تصاعدي)</option>
+          </select>
+          <select
+            className="orders-filter-select"
+            value={limit}
+            onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+          >
+            <option value={5}>5 طلبات / صفحة</option>
+            <option value={10}>10 طلبات / صفحة</option>
+            <option value={20}>20 طلبات / صفحة</option>
+            <option value={50}>50 طلبات / صفحة</option>
           </select>
         </div>
+
+        {error && (
+          <div className="orders-empty" style={{ minHeight: 'auto', marginBottom: 16 }}>
+            <h2>{error}</h2>
+          </div>
+        )}
 
         {/* Loading */}
         {loading && (
@@ -400,6 +461,31 @@ export default function TraderOrdersPage() {
                 onAction={handleAction}
               />
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalPages > 1 && (
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '24px', alignItems: 'center' }}>
+            <button
+              className="ord-btn ord-btn-details"
+              style={{ padding: '8px 16px' }}
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              السابق
+            </button>
+            <span style={{ fontSize: '14px', fontWeight: '500', margin: '0 8px' }}>
+              صفحة {page} من {totalPages}
+            </span>
+            <button
+              className="ord-btn ord-btn-details"
+              style={{ padding: '8px 16px' }}
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              التالي
+            </button>
           </div>
         )}
       </main>

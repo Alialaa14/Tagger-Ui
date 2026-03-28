@@ -10,6 +10,7 @@ import CartNote from '../components/cart/CartNote'
 import CouponModal from '../components/cart/CouponModal'
 import CartSkeleton from '../components/cart/CartSkeleton'
 import CartErrorBanner from '../components/cart/CartErrorBanner'
+import BackNavigator from '../components/common/BackNavigator'
 import './cart.css'
 
 export default function CartPage() {
@@ -129,6 +130,7 @@ export default function CartPage() {
 
       <main className="cart-page">
         <div className="container" dir="rtl">
+          <BackNavigator fallback="/" />
           <header className="cart-page-head">
             <div>
               <p className="cart-kicker">Cart</p>

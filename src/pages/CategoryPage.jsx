@@ -6,6 +6,7 @@ import CategoryHero from '../components/category/CategoryHero'
 import CategoryFilters from '../components/category/CategoryFilters'
 import CategoryProductsGrid from '../components/category/CategoryProductsGrid'
 import { useCategories } from '../context/CategoriesContext'
+import BackNavigator from '../components/common/BackNavigator'
 import './home.css'
 import './category-page.css'
 
@@ -122,6 +123,9 @@ export default function CategoryPage() {
       {category && <CategoryHero category={category} />}
 
       <main className="container category-main-v2">
+        <div style={{ marginTop: 24, marginBottom: -10 }} dir="rtl">
+          <BackNavigator fallback="/categories" />
+        </div>
         <CategoryFilters
           filters={filters}
           onChange={onFilterChange}

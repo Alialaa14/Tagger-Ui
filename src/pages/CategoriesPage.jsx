@@ -6,6 +6,7 @@ import CategoryCard from '../components/home/CategoryCard'
 import CategorySkeleton from '../components/home/CategorySkeleton'
 import CategoriesFilters from '../components/category/CategoriesFilters'
 import { useCategories } from '../context/CategoriesContext'
+import BackNavigator from '../components/common/BackNavigator'
 import './home.css'
 import './category-page.css'
 import './categories-page.css'
@@ -91,6 +92,9 @@ export default function CategoriesPage() {
       </section>
 
       <main className="container category-main-v2">
+        <div style={{ marginTop: 24 }} dir="rtl">
+          <BackNavigator fallback="/" />
+        </div>
         <CategoriesFilters
           filters={filters}
           onChange={onFilterChange}

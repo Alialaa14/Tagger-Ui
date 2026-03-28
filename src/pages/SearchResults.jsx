@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
+import BackNavigator from '../components/common/BackNavigator'
 
 function useQuery(){
   return new URLSearchParams(useLocation().search)
@@ -15,7 +16,8 @@ export default function SearchResults(){
   },[term])
 
   return (
-    <div className="container">
+    <div className="container" dir="rtl" style={{ margin: '40px auto' }}>
+      <BackNavigator fallback="/" />
       <h3>نتائج البحث عن "{q}"</h3>
       <p>{results.length} نتائج</p>
       <div className="products-grid">

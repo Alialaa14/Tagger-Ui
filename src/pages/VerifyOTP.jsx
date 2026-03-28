@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BackNavigator from '../components/common/BackNavigator'
 
 export default function VerifyOTP() {
   const [otp, setOtp] = useState('')
@@ -14,6 +15,7 @@ export default function VerifyOTP() {
 
   return (
     <section className="auth-page" dir="rtl" lang="ar">
+      <BackNavigator className="is-floating" fallback="/forgot" />
       <div className="auth-grid">
         <aside className="auth-hero">
           <div className="auth-hero__badge">خطوة التحقق</div>

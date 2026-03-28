@@ -1104,7 +1104,7 @@
 
 @media (max-width: 1024px) {
   .admin-sidebar {
-    transform: translateX(-100%);
+    transform: translateX(100%);
     transition: transform 260ms cubic-bezier(.4, 0, .2, 1);
   }
   .admin-sidebar.is-open { transform: translateX(0); }

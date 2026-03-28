@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BackNavigator from '../components/common/BackNavigator'
 
 export default function ForgotPassword() {
   const [phone, setPhone] = useState('')
@@ -15,6 +16,7 @@ export default function ForgotPassword() {
 
   return (
     <section className="auth-page" dir="rtl" lang="ar">
+      <BackNavigator className="is-floating" fallback="/login" />
       <div className="auth-grid">
         <aside className="auth-hero">
           <div className="auth-hero__badge">استعادة الوصول</div>
