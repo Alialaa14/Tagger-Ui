@@ -74,6 +74,35 @@ export default function Profile() {
             <li>تعديل بيانات المتجر</li>
             <li>رفع صورة الحساب</li>
           </ul>
+
+          {(user?.role === 'user' || user?.accountType === 'user') && (
+            <>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#4f46e5', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)', width: '100%', marginTop: 30 }}
+                onClick={() => navigate('/inventory')}
+              >
+                🏭 إدارة المخزن (Inventory)
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#10b981', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)', width: '100%', marginTop: 12 }}
+                onClick={() => navigate('/catalog')}
+              >
+                📦 تصفح كتالوج المنصة
+              </button>
+            </>
+          )}
+
+          {(user?.role === 'trader' || user?.accountType === 'trader') && (
+            <button
+              className="nb-btn-primary" 
+              style={{ background: '#10b981', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)', width: '100%', marginTop: 30, padding: '12px 0', borderRadius: '12px', fontSize: '15px' }}
+              onClick={() => navigate('/catalog')}
+            >
+              📦 تصفح كتالوج منتجات المنصة
+            </button>
+          )}
         </aside>
 
         <div className="auth-card" role="main" aria-labelledby="profile-title">

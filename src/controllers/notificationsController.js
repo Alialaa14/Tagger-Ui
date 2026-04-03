@@ -28,8 +28,24 @@ export async function markNotificationRead(notificationId) {
   if (!notificationId) throw new Error("notificationId is required");
   const response = await requestWithFallback(
     [
+      () => axios.patch(`http://localhost:3000/api/v1/notifications/${notificationId}/read`, {}, withCreds()),
       () => axios.patch(`${NOTIF_BASE}/${notificationId}/read`, {}, withCreds()),
       () => axios.patch(`${NOTIF_BASE}/${notificationId}`, { isRead: true }, withCreds()),
+    ],
+    "No notification update endpoint responded."
+  );
+  const payload = unwrapPayload(response);
+  return pickNotification(payload) || payload;
+}
+
+
+
+export async function updateNotification(notificationId, data) {
+  if (!notificationId) throw new Error("notificationId is required");
+  if (!data || typeof data !== "object") throw new Error("update data is required");
+  const response = await requestWithFallback(
+    [
+      () => axios.patch(`${NOTIF_BASE}/${notificationId}`, data, withCreds()),
     ],
     "No notification update endpoint responded."
   );

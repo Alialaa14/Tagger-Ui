@@ -6,9 +6,11 @@ const items = [
   { to: '/admin/orders', label: 'إدارة الطلبات' },
   { to: '/admin/categories', label: 'إدارة الفئات' },
   { to: '/admin/products', label: 'إدارة المنتجات' },
+  { to: '/admin/trader-products', label: 'منتجات التجار' },
   { to: '/admin/notifications', label: 'إدارة الإشعارات' },
   { to: '/admin/users-online', label: 'إدارة المستخدمين' },
   { to: '/admin/pages', label: 'تخصيص الواجهة' },
+  { to: '/admin/reviews', label: 'إدارة التقييمات' },
 ]
 
 export default function AdminSidebar({ open, onClose }) {

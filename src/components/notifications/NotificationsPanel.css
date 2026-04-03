@@ -11,10 +11,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
-.notif-panel-head h3 {
+.notif-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notif-panel-title h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 800;
@@ -32,15 +38,60 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0 8px;
 }
 
+.notif-count--unread {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+/* ── Refresh button ──────────────────── */
+.notif-panel-refresh {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: all 180ms ease;
+  padding: 0;
+}
+
+.notif-panel-refresh:hover:not(:disabled) {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+.notif-panel-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notif-panel-refresh__spin {
+  animation: notifSpin 0.8s linear infinite;
+}
+
+@keyframes notifSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Skeleton loading ────────────────── */
 .notif-skeleton-list {
   display: grid;
   gap: 10px;
 }
 
 .notif-skeleton {
-  height: 48px;
+  height: 72px;
   border-radius: 12px;
   background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
   background-size: 200% 100%;
@@ -48,21 +99,33 @@
 }
 
 @keyframes notifShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
+/* ── Empty / error state ─────────────── */
 .notif-empty {
   color: #64748b;
   font-weight: 700;
   font-size: 13px;
-  padding: 12px;
+  padding: 20px 12px;
   background: #f8fafc;
   border-radius: 12px;
   border: 1px dashed rgba(15, 23, 42, 0.12);
   text-align: center;
 }
 
+/* ── Card list ───────────────────────── */
+.notif-card-list {
+  display: grid;
+  gap: 10px;
+}
+
+/* Legacy .notif-list for backward compat */
 .notif-list {
   list-style: none;
   padding: 0;

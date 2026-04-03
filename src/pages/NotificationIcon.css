@@ -1,0 +1,328 @@
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATION ICON  —  bell + dropdown
+   Matches home.css design tokens (--green-*, --grey-*, shadows)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Bell button ─────────────────────────────────────────────── */
+
+.ni-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ni-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: var(--grey-50);
+  color: var(--grey-600);
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+  outline: none;
+}
+
+.ni-bell:hover {
+  background: var(--green-50);
+  color: var(--green-600);
+}
+
+.ni-bell--active {
+  background: var(--green-50);
+  color: var(--green-600);
+  border-color: var(--green-200);
+}
+
+.ni-bell:focus-visible {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .28);
+}
+
+.ni-bell__svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Wiggle animation when a new notification arrives */
+@keyframes ni-ring {
+  0%, 100% { transform: rotate(0deg);   }
+  15%       { transform: rotate(14deg);  }
+  30%       { transform: rotate(-10deg); }
+  45%       { transform: rotate(8deg);   }
+  60%       { transform: rotate(-5deg);  }
+  75%       { transform: rotate(3deg);   }
+}
+
+.ni-bell--ringing .ni-bell__svg {
+  animation: ni-ring 0.7s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* ── Badge ───────────────────────────────────────────────────── */
+
+.ni-badge {
+  position: absolute;
+  top: -5px;
+  left: -5px;          /* RTL: left edge */
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  border: 2px solid var(--white);
+  pointer-events: none;
+  animation: ni-pop 0.3s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@keyframes ni-pop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Dropdown panel ──────────────────────────────────────────── */
+
+.ni-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(300px, 92vw, 380px);
+  background: var(--white);
+  border: 1.5px solid var(--border-soft);
+  border-radius: 20px;
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,.06),
+    0 16px 48px -8px rgba(0,0,0,.14);
+  overflow: hidden;
+  z-index: 999;
+  animation: ni-slide-in 0.2s cubic-bezier(.34, 1.32, .64, 1);
+}
+
+@keyframes ni-slide-in {
+  from { opacity: 0; transform: translate(-50%, -8px) scale(.97); }
+  to   { opacity: 1; transform: translate(-50%, 0)    scale(1);   }
+}
+
+/* Header row */
+.ni-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ni-panel__title {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--grey-900);
+}
+
+.ni-panel__mark-all {
+  background: none;
+  border: none;
+  color: var(--green-600);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.ni-panel__mark-all:hover {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+
+/* Scrollable body */
+.ni-panel__body {
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--grey-200) transparent;
+}
+
+/* Empty state */
+.ni-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: var(--grey-400);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ni-panel__empty-icon {
+  font-size: 32px;
+  filter: grayscale(.4);
+}
+
+/* Footer link */
+.ni-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 13px 18px;
+  border: none;
+  border-top: 1px solid var(--border-soft);
+  background: var(--grey-50);
+  color: var(--green-700);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.ni-panel__footer:hover {
+  background: var(--green-50);
+}
+
+/* ── Notification row ────────────────────────────────────────── */
+
+.ni-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 18px;
+  border: none;
+  background: var(--white);
+  text-align: right;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 150ms ease;
+}
+
+.ni-row:last-of-type {
+  border-bottom: none;
+}
+
+.ni-row:hover {
+  background: var(--grey-50);
+}
+
+.ni-row--unread {
+  background: rgba(34, 197, 94, .05);
+}
+
+.ni-row--unread:hover {
+  background: rgba(34, 197, 94, .09);
+}
+
+.ni-row__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  line-height: 1;
+}
+
+.ni-row__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ni-row__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--grey-900);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ni-row__msg {
+  font-size: 12px;
+  color: var(--grey-400);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ni-row__time {
+  font-size: 11px;
+  color: var(--grey-300);
+  font-weight: 600;
+}
+
+/* Unread dot / Mark read */
+.ni-mark-read-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background: var(--green-100);
+  color: var(--green-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.ni-mark-read-btn:hover {
+  background: var(--green-500);
+  color: var(--white);
+  transform: scale(1.1);
+}
+
+/* ── Loading skeletons ───────────────────────────────────────── */
+
+.ni-panel__loading {
+  padding: 8px 0;
+}
+
+.ni-skeleton {
+  margin: 10px 18px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--grey-100) 25%,
+    var(--grey-50)  50%,
+    var(--grey-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerAnim 1.4s infinite;
+}
+
+/* ── Mobile tweaks ────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .ni-panel {
+    position: fixed;
+    top: 72px;
+    left: 14px;
+    right: 14px;
+    transform: none;
+    width: auto;
+    max-width: none;
+  }
+}

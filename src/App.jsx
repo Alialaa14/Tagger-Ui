@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
@@ -10,8 +10,10 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import ProductManager from './pages/admin/ProductManager'
 import CategoryManager from './pages/admin/CategoryManager'
 import UsersOnline from './pages/admin/UsersOnline'
-import NotificationsPage from './pages/admin/NotificationsPage'
+import AdminNotificationPage from './pages/admin/NotificationsPage'
 import PageSettings from './pages/admin/PageSettings'
+import TraderProductManager from './pages/admin/TraderProductManager'
+import InventoryPage from './pages/InventoryPage'
 import Home from './pages/Home'
 import CategoriesPage from './pages/CategoriesPage'
 import CategoryPage from './pages/CategoryPage'
@@ -23,9 +25,15 @@ import { RequireAdmin, RequireAuth } from './components/RouteGuards'
 import CheckoutPage from "./pages/CheckoutPage"
 import CustomerOrdersPage from "./pages/CustomerOrdersPage"
 import TraderOrdersPage from "./pages/TraderOrdersPage"
-import TraderNotificationsPage from "./pages/TraderNotificationsPage"
+import CatalogPage from "./pages/CatalogPage"
 import TraderChatPage from "./pages/TraderChatPage"
 import AdminOrdersPage from "./pages/AdminOrdersPage"
+import NotificationsPage from './pages/NotificationsPage'
+import NotificationDetail from './pages/NotificationDetail'
+import MyReviewsPage from './pages/MyReviewsPage'
+import AdminReviewsPage from './pages/admin/AdminReviewsPage'
+
+
 export default function App() {
   return (
     <div className="app-shell">
@@ -44,10 +52,15 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route element={<RequireAuth />}>
             <Route path="/profile" element={<Profile />} />
-            <Route path="/orders"    element={<CustomerOrdersPage />} />
+            <Route path="/orders" element={<CustomerOrdersPage />} />
             <Route path="/trader/orders" element={<TraderOrdersPage />} />
-            <Route path="/trader/notifications" element={<TraderNotificationsPage />} />
+            <Route path="/trader/catalog" element={<Navigate to="/catalog" replace />} />
+            <Route path="/catalog" element={<CatalogPage />} />
             <Route path="/trader/chat" element={<TraderChatPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/notifications/:id" element={<NotificationDetail />} />
+            <Route path="/my-reviews" element={<MyReviewsPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
           </Route>
 
           <Route element={<RequireAdmin />}>
@@ -56,9 +69,11 @@ export default function App() {
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="categories" element={<CategoryManager />} />
               <Route path="products" element={<ProductManager />} />
-              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="trader-products" element={<TraderProductManager />} />
+              <Route path="notifications" element={<AdminNotificationPage />} />
               <Route path="users-online" element={<UsersOnline />} />
               <Route path="pages" element={<PageSettings />} />
+              <Route path="reviews" element={<AdminReviewsPage />} />
             </Route>
           </Route>
 

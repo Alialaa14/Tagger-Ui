@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import "./navbar.css"
-
+import NotificationIcon from "../pages/NotificationIcon"
 /* ── Icons ─────────────────────────────────────────────────── */
 const Icon = ({ d, size = 18, stroke = 2 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -13,19 +13,22 @@ const Icon = ({ d, size = 18, stroke = 2 }) => (
 )
 
 const ICONS = {
-  search:  'M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z',
-  cart:    'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0',
-  user:    'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z',
-  logout:  'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
+  search: 'M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z',
+  cart: 'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0',
+  user: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z',
+  logout: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
   profile: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
-  verify:  'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z',
-  admin:   'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
-  orders:  'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
-  menu:    'M3 12h18M3 6h18M3 18h18',
-  close:   'M18 6L6 18M6 6l12 12',
+  verify: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z',
+  admin: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
+  orders: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+  menu: 'M3 12h18M3 6h18M3 18h18',
+  close: 'M18 6L6 18M6 6l12 12',
   chevron: 'M19 9l-7 7-7-7',
-  pin:     'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
-  phone:   'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
+  pin: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
+  phone: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
+  store: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
+  star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+  package: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
 }
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -35,22 +38,22 @@ function roleLabel(role) {
 }
 
 function roleBadgeClass(role) {
-  if (role === 'admin')    return 'nb-badge nb-badge--admin'
-  if (role === 'trader')   return 'nb-badge nb-badge--trader'
+  if (role === 'admin') return 'nb-badge nb-badge--admin'
+  if (role === 'trader') return 'nb-badge nb-badge--trader'
   if (role === 'customer') return 'nb-badge nb-badge--customer'
-  if (role === 'user')     return 'nb-badge nb-badge--customer'
+  if (role === 'user') return 'nb-badge nb-badge--customer'
   return 'nb-badge'
 }
 
 /* ── User dropdown panel ────────────────────────────────────── */
 function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose, logout, navigate }) {
-  const imageSrc   = user?.logo?.url || user?.logo || user?.avatar || user?.logo?.url || ''
-  const userName   = user?.username  || user?.name  || user?.shopName || 'المستخدم'
-  const city       = user?.city       || ''
+  const imageSrc = user?.logo?.url || user?.logo || user?.avatar || user?.logo?.url || ''
+  const userName = user?.username || user?.name || user?.shopName || 'المستخدم'
+  const city = user?.city || ''
   const governorate = user?.governorate || ''
-  const phone      = user?.phoneNumber || ''
-  const shopName   = user?.shopName   || ''
-  const location   = [city, governorate].filter(Boolean).join('، ')
+  const phone = user?.phoneNumber || ''
+  const shopName = user?.shopName || ''
+  const location = [city, governorate].filter(Boolean).join('، ')
 
   const go = (path) => { navigate(path); onClose() }
   return (
@@ -60,7 +63,7 @@ function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose,
         <div className="nb-dropdown__avatar-wrap">
           {imageSrc
             ? <img src={imageSrc} alt={userName} className="nb-dropdown__avatar" />
-            : <div className="nb-dropdown__avatar nb-dropdown__avatar--fallback">{String(userName).slice(0,1).toUpperCase()}</div>
+            : <div className="nb-dropdown__avatar nb-dropdown__avatar--fallback">{String(userName).slice(0, 1).toUpperCase()}</div>
           }
           <span className={roleBadgeClass(role)}>{roleLabel(role)}</span>
         </div>
@@ -96,6 +99,27 @@ function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose,
           توثيق الحساب
         </button>
 
+        {!isAdmin && (
+          <button className="nb-dropdown__item" onClick={() => go('/my-reviews')}>
+            <span className="nb-dropdown__item-icon nb-dropdown__item-icon--amber"><Icon d={ICONS.star} size={16} /></span>
+            تقييماتي
+          </button>
+        )}
+
+        {role === 'user' && (
+          <button className="nb-dropdown__item" onClick={() => go('/inventory')}>
+            <span className="nb-dropdown__item-icon nb-dropdown__item-icon--green"><Icon d={ICONS.package} size={16} /></span>
+            مخزني (Inventory)
+          </button>
+        )}
+
+        {(role === 'trader' || role === 'user') && (
+          <button className="nb-dropdown__item" onClick={() => go('/catalog')}>
+            <span className="nb-dropdown__item-icon nb-dropdown__item-icon--amber"><Icon d={ICONS.store} size={16} /></span>
+            {role === 'trader' ? 'كتالوج المنتجات' : 'كتالوج المنصة'}
+          </button>
+        )}
+
         {isCustomer && (
           <button className="nb-dropdown__item" onClick={() => go('/orders')}>
             <span className="nb-dropdown__item-icon"><Icon d={ICONS.orders} size={16} /></span>
@@ -129,20 +153,20 @@ function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose,
 /* ── Main Navbar ────────────────────────────────────────────── */
 export default function Navbar() {
   const navigate = useNavigate()
-  const [q, setQ]               = useState('')
-  const [focused, setFocused]   = useState(false)
+  const [q, setQ] = useState('')
+  const [focused, setFocused] = useState(false)
   const [dropOpen, setDropOpen] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
-  const dropRef   = useRef(null)
-  const inputRef  = useRef(null)
+  const dropRef = useRef(null)
+  const inputRef = useRef(null)
 
-  const { totalQuantity }                          = useCart()
+  const { totalQuantity } = useCart()
   const { user, isAuthenticated, loading, logout } = useAuth()
 
   const imageSrc = user?.image?.url || ''
   const userName = user?.username || user?.name || user?.shopName || 'المستخدم'
-  const role     = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
-  const isAdmin    = role === 'admin'
+  const role = String(user?.role || user?.accountType || localStorage.getItem('user_role') || '').toLowerCase()
+  const isAdmin = role === 'admin'
   const isCustomer = role === 'customer' || role === 'user'
 
   /* Close dropdown on outside click */
@@ -209,6 +233,7 @@ export default function Navbar() {
             {/* Guest */}
             {!loading && !isAuthenticated && (
               <>
+
                 <button className="nb-btn-ghost" onClick={() => navigate('/login')}>
                   تسجيل الدخول
                 </button>
@@ -221,6 +246,7 @@ export default function Navbar() {
             {/* Authenticated */}
             {!loading && isAuthenticated && (
               <>
+                <NotificationIcon />
                 {/* Cart — customers only */}
                 {isCustomer && (
                   <button className="nb-cart-btn" onClick={() => navigate('/cart')} aria-label={`السلة - ${totalQuantity} عناصر`}>
@@ -242,7 +268,7 @@ export default function Navbar() {
                   >
                     {imageSrc
                       ? <img src={imageSrc} alt={userName} className="nb-user-avatar" />
-                      : <div className="nb-user-avatar nb-user-avatar--fallback">{String(userName).slice(0,1).toUpperCase()}</div>
+                      : <div className="nb-user-avatar nb-user-avatar--fallback">{String(userName).slice(0, 1).toUpperCase()}</div>
                     }
                     <span className="nb-user-name">{userName}</span>
                     <span className={`nb-user-chevron ${dropOpen ? 'nb-user-chevron--up' : ''}`}>
@@ -309,6 +335,14 @@ export default function Navbar() {
           {/* Mobile cart controls */}
           {!loading && isAuthenticated && isCustomer && (
             <div className="nb-mobile-auth">
+              {role === 'user' && (
+                <button className="nb-btn-primary nb-btn--full" style={{ marginBottom: '8px' }} onClick={() => { navigate('/inventory'); setMobileMenu(false) }}>إدارة المخزن (Inventory)</button>
+              )}
+              {(role === 'user' || role === 'trader') && (
+                 <button className="nb-btn-ghost nb-btn--full" style={{ marginBottom: '8px' }} onClick={() => { navigate('/catalog'); setMobileMenu(false) }}>
+                   {role === 'trader' ? 'كتالوج المنتجات' : 'كتالوج المنصة'}
+                 </button>
+              )}
               <button
                 className="nb-btn-ghost nb-btn--full"
                 onClick={() => { navigate('/cart'); setMobileMenu(false) }}

@@ -10,6 +10,7 @@
   --green-50:  #f0fdf4;
   --green-100: #dcfce7;
   --green-200: #bbf7d0;
+  --green-300: #86efac;
   --green-400: #4ade80;
   --green-500: #22c55e;
   --green-600: #16a34a;
@@ -21,8 +22,11 @@
   --grey-50:   #f8fafc;
   --grey-100:  #f1f5f9;
   --grey-200:  #e2e8f0;
+  --grey-300:  #cbd5e1;
   --grey-400:  #94a3b8;
+  --grey-500:  #64748b;
   --grey-600:  #475569;
+  --grey-700:  #334155;
   --grey-800:  #1e293b;
   --grey-900:  #0f172a;
 
