@@ -15,8 +15,8 @@ function StockMovementModal({ item, type, onClose, onSave }) {
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const title = type === 'in' ? 'إضافة مخزون (Stock In)' : 
-                type === 'out' ? 'سحب مخزون (Stock Out)' : 'تعديل يدوي (Adjust)';
+  const title = type === 'in' ? 'إضافة مخزون (Stock In)' :
+    type === 'out' ? 'سحب مخزون (Stock Out)' : 'تعديل يدوي (Adjust)';
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,7 +30,7 @@ function StockMovementModal({ item, type, onClose, onSave }) {
       if (type === 'in') await invApi.stockIn(item._id, Number(quantity), note)
       else if (type === 'out') await invApi.stockOut(item._id, Number(quantity), note)
       else await invApi.adjustStock(item._id, Number(quantity), note)
-      
+
       toast("تم تحديث المخزون بنجاح", "success")
       onSave()
       onClose()
@@ -52,10 +52,10 @@ function StockMovementModal({ item, type, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="admin-stack">
           <div className="admin-label">
             <span>الكمية</span>
-            <input 
-              type="number" 
-              className="admin-input" 
-              value={quantity} 
+            <input
+              type="number"
+              className="admin-input"
+              value={quantity}
               onChange={e => setQuantity(e.target.value)}
               placeholder="0"
               required
@@ -63,10 +63,10 @@ function StockMovementModal({ item, type, onClose, onSave }) {
           </div>
           <div className="admin-label">
             <span>ملاحظات (إختياري)</span>
-            <textarea 
-              className="admin-input" 
-              rows="2" 
-              value={note} 
+            <textarea
+              className="admin-input"
+              rows="2"
+              value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="مثال: توريد جديد، تالف..."
             />
@@ -162,7 +162,7 @@ function CustomProductModal({ onClose, onSave, categories }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.image) return toast("يرجى اختيار صورة للمنتج", "error")
-    
+
     setLoading(true)
     try {
       const fd = new FormData()
@@ -193,49 +193,49 @@ function CustomProductModal({ onClose, onSave, categories }) {
 
         <form onSubmit={handleSubmit} className="admin-stack" style={{ marginTop: '20px' }}>
           <div className="admin-grid-2">
-             <div className="admin-label">
-                <span>اسم المنتج</span>
-                <input className="admin-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
-             </div>
-             <div className="admin-label">
-                <span>الفئة</span>
-                <select className="admin-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})} required>
-                  <option value="">اختر فئة...</option>
-                  {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                </select>
-             </div>
+            <div className="admin-label">
+              <span>اسم المنتج</span>
+              <input className="admin-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div className="admin-label">
+              <span>الفئة</span>
+              <select className="admin-input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} required>
+                <option value="">اختر فئة...</option>
+                {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </select>
+            </div>
           </div>
 
           <div className="admin-label">
             <span>الوصف</span>
-            <input className="admin-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+            <input className="admin-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
 
           <div className="admin-grid-2">
-             <div className="admin-label">
-                <span>سعر البيع (ج.م)</span>
-                <input type="number" className="admin-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} required />
-             </div>
-             <div className="admin-label">
-                <span>تنبيه عند وصول المخزون لـ</span>
-                <input type="number" className="admin-input" value={form.lowStockThreshold} onChange={e => setForm({...form, lowStockThreshold: e.target.value})} />
-             </div>
+            <div className="admin-label">
+              <span>سعر البيع (ج.م)</span>
+              <input type="number" className="admin-input" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
+            </div>
+            <div className="admin-label">
+              <span>تنبيه عند وصول المخزون لـ</span>
+              <input type="number" className="admin-input" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })} />
+            </div>
           </div>
 
           <div className="admin-label">
-             <span>صورة المنتج</span>
-             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <input type="file" accept="image/*" onChange={onFile} hidden id="inv-img" />
-                <label htmlFor="inv-img" className="admin-btn admin-btn-ghost" style={{ cursor: 'pointer' }}>اختر ملف</label>
-                {preview && <img src={preview} alt="" style={{ width: '60px', height: '60px', borderRadius: '10px' }} />}
-             </div>
+            <span>صورة المنتج</span>
+            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+              <input type="file" accept="image/*" onChange={onFile} hidden id="inv-img" />
+              <label htmlFor="inv-img" className="admin-btn admin-btn-ghost" style={{ cursor: 'pointer' }}>اختر ملف</label>
+              {preview && <img src={preview} alt="" style={{ width: '60px', height: '60px', borderRadius: '10px' }} />}
+            </div>
           </div>
 
           <div className="product-form-actions" style={{ marginTop: '30px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
-             <button type="submit" className="admin-btn admin-btn-primary" disabled={loading} style={{ padding: '0 40px' }}>
-               {loading ? "جاري الحفظ..." : "حفظ المنتج في المخزن"}
-             </button>
-             <button type="button" className="admin-btn admin-btn-ghost" onClick={onClose}>إلغاء</button>
+            <button type="submit" className="admin-btn admin-btn-primary" disabled={loading} style={{ padding: '0 40px' }}>
+              {loading ? "جاري الحفظ..." : "حفظ المنتج في المخزن"}
+            </button>
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={onClose}>إلغاء</button>
           </div>
         </form>
       </div>
@@ -249,7 +249,7 @@ export default function InventoryPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ source: '', lowStock: false })
-  
+
   // Modals state
   const [movementTarget, setMovementTarget] = useState(null)
   const [logTarget, setLogTarget] = useState(null)
@@ -259,8 +259,8 @@ export default function InventoryPage() {
     setLoading(true)
     try {
       const data = await invApi.fetchMyInventory({
-        source: filters.source || undefined,
-        lowStock: filters.lowStock || undefined
+        source: filters.source || "",
+        lowStock: filters.lowStock || null
       })
       setInventory(data.inventory || [])
     } catch (err) {
@@ -272,13 +272,13 @@ export default function InventoryPage() {
 
   useEffect(() => {
     fetchInventory()
-    
+
     // Fetch categories for the custom modal
     const getCats = async () => {
       try {
         const res = await axios.get('http://localhost:3000/api/v1/category', { withCredentials: true })
         setCategories(res.data?.data || [])
-      } catch (err) {}
+      } catch (err) { }
     }
     getCats()
   }, [filters])
@@ -332,14 +332,14 @@ export default function InventoryPage() {
         <div className="admin-card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
             <div className="admin-label" style={{ flex: 1, maxWidth: '200px' }}>
-              <select className="admin-input" value={filters.source} onChange={e => setFilters({...filters, source: e.target.value})}>
+              <select className="admin-input" value={filters.source} onChange={e => setFilters({ ...filters, source: e.target.value })}>
                 <option value="">كل المصادر</option>
                 <option value="platform">منتجات المنصة</option>
                 <option value="custom">منتجات مخصصة</option>
               </select>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              <input type="checkbox" checked={filters.lowStock} onChange={e => setFilters({...filters, lowStock: e.target.checked})} />
+              <input type="checkbox" checked={filters.lowStock} onChange={e => setFilters({ ...filters, lowStock: e.target.checked })} />
               عرض النواقص فقط
             </label>
             <button className="admin-btn admin-btn-ghost" onClick={fetchInventory} style={{ marginRight: 'auto' }}>🔄 تحديث</button>
@@ -355,10 +355,10 @@ export default function InventoryPage() {
           <div className="inventory-grid">
             {inventory.map(item => {
               const p = item.source === 'platform' ? item.productId : item.customProduct;
-              const img = (item.source === 'platform' ? 
-                           ((typeof p.image === 'string' ? p.image : p.image?.url) || 'https://placehold.co/400x400?text=Inventory') : 
-                           (p.image?.url || 'https://placehold.co/400x400?text=Custom'))
-              
+              const img = (item.source === 'platform' ?
+                ((typeof p.image === 'string' ? p.image : p.image?.url) || 'https://placehold.co/400x400?text=Inventory') :
+                (p.image?.url || 'https://placehold.co/400x400?text=Custom'))
+
               const progress = Math.min(100, (item.quantity / (item.lowStockThreshold || 10)) * 100);
               const color = item.isLowStock ? '#ef4444' : '#16a34a';
 
@@ -407,23 +407,23 @@ export default function InventoryPage() {
 
       {/* Modals */}
       {movementTarget && (
-        <StockMovementModal 
-          item={movementTarget.item} 
-          type={movementTarget.type} 
-          onClose={() => setMovementTarget(null)} 
+        <StockMovementModal
+          item={movementTarget.item}
+          type={movementTarget.type}
+          onClose={() => setMovementTarget(null)}
           onSave={fetchInventory}
         />
       )}
 
       {logTarget && (
-        <LogViewerModal 
-          item={logTarget} 
-          onClose={() => setLogTarget(null)} 
+        <LogViewerModal
+          item={logTarget}
+          onClose={() => setLogTarget(null)}
         />
       )}
 
       {showCustomModal && (
-        <CustomProductModal 
+        <CustomProductModal
           categories={categories}
           onClose={() => setShowCustomModal(false)}
           onSave={fetchInventory}
