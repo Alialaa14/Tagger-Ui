@@ -5,7 +5,10 @@ export default function CategoryHero({ category }) {
   return (
     <section
       className="category-hero"
-      style={{ backgroundImage: `url(${category?.image?.url || ''})` }}
+      style={{ 
+        backgroundImage: category?.image?.url ? `url(${category.image.url})` : 'none',
+        backgroundColor: '#16a34a' // Brand green fallback
+      }}
       dir="rtl"
     >
       <div className="category-hero-overlay" />
@@ -13,12 +16,10 @@ export default function CategoryHero({ category }) {
         <nav className="category-breadcrumb" aria-label="breadcrumb">
           <Link to="/">الرئيسية</Link>
           <span>/</span>
-          <span>الفئات</span>
-          <span>/</span>
-          <span>{category?.name}</span>
+          <span>{category?.name ? category.name : 'البحث'}</span>
         </nav>
-        <h1>{category?.name}</h1>
-        <p>{category?.description}</p>
+        <h1>{category?.name || 'استكشف منتجاتنا'}</h1>
+        <p>{category?.description || 'اكتشف أفضل العروض والمنتجات الحصرية المتاحة الآن.'}</p>
       </div>
     </section>
   )

@@ -938,7 +938,7 @@ textarea {
 .bc-root {
   position: relative;
   width: 100%;
-  height: clamp(280px, 42vw, 480px);
+  height: clamp(420px, 55vw, 640px);
   overflow: hidden;
   border-radius: 0;
   background: #14532d;
@@ -1165,7 +1165,7 @@ textarea {
 /* Responsive */
 @media (max-width: 768px) {
   .bc-root {
-    height: clamp(320px, 70vw, 420px);
+    height: clamp(380px, 80vw, 520px);
   }
 
   .bc-slide {

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:3000/api/v1/auth";
+const API_BASE = "/api/v1/auth";
 
 function pickUsersArray(payload) {
   if (Array.isArray(payload)) return payload;
@@ -82,4 +82,13 @@ export async function deleteUserById(userId) {
   await requestWithFallback([
     () => axios.delete(`${API_BASE}/user/${userId}`, { withCredentials: true }),
   ]);
+}
+
+export async function createAdminUser(userData) {
+  const response = await requestWithFallback([
+    () => axios.post(`${API_BASE}/admin`, userData, { withCredentials: true }),
+  ]);
+
+  const payload = response?.data?.data ?? response?.data;
+  return pickSingleUser(payload);
 }

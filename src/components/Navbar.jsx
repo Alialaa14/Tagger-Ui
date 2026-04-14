@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { useUI } from '../context/UIContext'
 import "./navbar.css"
 import NotificationIcon from "../pages/NotificationIcon"
+
 /* ── Icons ─────────────────────────────────────────────────── */
 const Icon = ({ d, size = 18, stroke = 2 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -20,7 +22,7 @@ const ICONS = {
   profile: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
   verify: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z',
   admin: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
-  orders: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+  orders: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
   menu: 'M3 12h18M3 6h18M3 18h18',
   close: 'M18 6L6 18M6 6l12 12',
   chevron: 'M19 9l-7 7-7-7',
@@ -153,6 +155,11 @@ function UserDropdown({ user, role, isAdmin, isCustomer, totalQuantity, onClose,
 /* ── Main Navbar ────────────────────────────────────────────── */
 export default function Navbar() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { toggleAdminSidebar } = useUI()
+  
+  const isDashboardRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/trader')
+  
   const [q, setQ] = useState('')
   const [focused, setFocused] = useState(false)
   const [dropOpen, setDropOpen] = useState(false)
@@ -195,6 +202,17 @@ export default function Navbar() {
     <>
       <header className="nb-root" dir="rtl">
         <div className="nb-inner">
+
+          {/* ── Dashboard Menu Toggle (Mobile Admin/Trader) ── */}
+          {isDashboardRoute && (
+            <button 
+              className="nb-dashboard-toggle" 
+              onClick={toggleAdminSidebar}
+              aria-label="قائمة اللوحة"
+            >
+              <Icon d={ICONS.menu} size={22} />
+            </button>
+          )}
 
           {/* ── Logo ── */}
           <Link to="/" className="nb-logo" aria-label="الصفحة الرئيسية">

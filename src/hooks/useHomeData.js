@@ -52,7 +52,7 @@ export default function useHomeData() {
 
       try {
         const { data } = await axios.get(
-          "http://localhost:3000/api/v1/pages/home",
+          "/api/v1/pages/home",
           { withCredentials: true },
         );
 
@@ -79,8 +79,8 @@ export default function useHomeData() {
         // Graceful degradation — show seed data so the UI is never blank
         setError(
           err?.response?.data?.message ||
-            err?.message ||
-            "تعذر تحميل البيانات.",
+          err?.message ||
+          "تعذر تحميل البيانات.",
         );
         setCategories(seedCategories.map(normalizeCategory));
         setBestSelling(seedProducts.slice(0, 8).map(normalizeProduct));

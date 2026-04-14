@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 
 /**
  * CartItemCard
@@ -25,7 +25,7 @@ export default function CartItemCard({ line, onIncrement, onDecrement, onRemove 
         {imageUrl ? (
           <img src={imageUrl} alt={name} className="cart-item-image" loading="lazy" />
         ) : (
-          <div className="cart-item-image-placeholder">🛍️</div>
+          <div className="cart-item-image-placeholder">???</div>
         )}
       </div>
 
@@ -33,10 +33,10 @@ export default function CartItemCard({ line, onIncrement, onDecrement, onRemove 
         <p className="cart-item-name" title={name}>{name}</p>
         <div className="cart-item-meta">
           <span className="cart-item-price-each">
-            {Number.isFinite(unitPrice) ? unitPrice.toFixed(2) : '—'} ج.م / قطعة
+            {Number.isFinite(unitPrice) ? unitPrice.toFixed(2) : '�'} ?.? / ????
           </span>
           {hasDisc && (
-            <span className="cart-item-discount-badge">خصم {discount.toFixed(2)} ج.م</span>
+            <span className="cart-item-discount-badge">??? {discount.toFixed(2)} ?.?</span>
           )}
         </div>
       </div>
@@ -47,31 +47,31 @@ export default function CartItemCard({ line, onIncrement, onDecrement, onRemove 
             className="cart-qty-btn"
             onClick={() => onDecrement(productId)}
             disabled={quantity <= 1}
-            aria-label="تقليل الكمية"
+            aria-label="????? ??????"
           >
-            −
+            -
           </button>
           <span className="cart-qty-display">{quantity}</span>
           <button
             className="cart-qty-btn"
             onClick={() => onIncrement(productId)}
-            aria-label="زيادة الكمية"
+            aria-label="????? ??????"
           >
             +
           </button>
         </div>
 
         <span className="cart-item-line-total">
-          {Number.isFinite(lineTotal) ? lineTotal.toFixed(2) : '—'} ج.م
+          {Number.isFinite(lineTotal) ? lineTotal.toFixed(2) : '�'} ?.?
         </span>
 
         <button
           className="cart-item-remove"
           onClick={() => onRemove(productId)}
-          aria-label={`حذف ${name}`}
-          title="حذف من السلة"
+          aria-label={`??? ${name}`}
+          title="??? ?? ?????"
         >
-          ✕
+          ?
         </button>
       </div>
     </article>

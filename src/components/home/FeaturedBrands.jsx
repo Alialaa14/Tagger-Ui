@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { companyApi } from '../../utils/companyApi'
 import './FeaturedBrands.css'
 
 const DEFAULT_BRANDS = [
@@ -12,18 +14,31 @@ const DEFAULT_BRANDS = [
 ]
 
 export default function FeaturedBrands() {
-  const [brands, setBrands] = useState(DEFAULT_BRANDS)
+  const [brands, setBrands] = useState([])
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    // Load custom brands from localStorage if available (Admin override)
-    const stored = localStorage.getItem('tagger_brands')
-    if (stored) {
+    const fetchBrands = async () => {
       try {
-        setBrands(JSON.parse(stored))
-      } catch (err) { }
+        setLoading(true)
+        const data = await companyApi.getActiveCompanies()
+        setBrands(data || [])
+      } catch (err) {
+        console.error('Failed to fetch brands:', err)
+      } finally {
+        setLoading(false)
+      }
     }
+    fetchBrands()
   }, [])
 
+  const handleBrandClick = (brandId) => {
+    // Navigate to categories with company filter
+    navigate(`/categories?company=${brandId}`)
+  }
+
+  if (loading) return null // Or a skeleton
   if (brands.length === 0) return null
 
   // Double the array to create an infinite seamless loop effect
@@ -38,8 +53,14 @@ export default function FeaturedBrands() {
         <div className="brands-marquee-wrap">
           <div className="brands-marquee">
             {displayBrands.map((brand, idx) => (
-              <div key={`${brand.id}-${idx}`} className="brand-logo-item" title={brand.name}>
-                <img src={brand.logo} alt={brand.name} loading="lazy" />
+              <div 
+                key={`${brand._id || brand.id}-${idx}`} 
+                className="brand-logo-item" 
+                title={brand.name}
+                onClick={() => handleBrandClick(brand._id || brand.id)}
+                style={{ cursor: 'pointer' }}
+              >
+                <img src={brand.logo?.url || brand.logo} alt={brand.name} loading="lazy" />
               </div>
             ))}
           </div>

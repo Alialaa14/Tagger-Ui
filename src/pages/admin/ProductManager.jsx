@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from "../../utils/toast"
 import axios from 'axios'
@@ -16,18 +16,23 @@ import {
   openEditProductForm,
   removeProductById,
   setCategories,
+  setCompanies,
   setProducts,
   setCategoriesLoading,
+  setCompaniesLoading,
   setDeletingProduct,
   setIsDeleting,
   updateProduct,
 } from '../../store/productAdminSlice'
+import { companyApi } from '../../utils/companyApi'
 
 export default function ProductManager() {
   const dispatch = useDispatch()
   const {
     categories,
     categoriesLoading,
+    companies,
+    companiesLoading,
     products,
     selectedProduct,
     showCreateForm,
@@ -38,9 +43,9 @@ export default function ProductManager() {
   const [filters, setFilters] = useState(initialProductFilters)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
-  const [totalItems , setTotalItems] = useState(0)
-  const [totalPages , setTotalPages] = useState(0)
-  
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+
 
 
 
@@ -49,14 +54,14 @@ export default function ProductManager() {
   const handleDelete = async (productId) => {
     // Placeholder only: integrate real API delete request in your data layer.
     try {
-      const deleteProduct = await axios.delete(`http://localhost:3000/api/v1/product/${productId}`, {
+      const deleteProduct = await axios.delete(`/api/v1/product/${productId}`, {
         withCredentials: true,
       })
       if (!deleteProduct?.data?.data) {
         toast('فشل حذف المنتج', 'error')
         return
       }
-      setTotalItems((prev)=> prev - 1)
+      setTotalItems((prev) => prev - 1)
       toast('تم حذف المنتج', 'success')
       dispatch(removeProductById(productId))
     } catch (error) {
@@ -82,13 +87,14 @@ export default function ProductManager() {
       data.append('name', formData.name)
       data.append('description', formData.description)
       data.append('category', formData.category)
+      data.append('company', formData.company)
       data.append('price', String(formData.price))
 
       if (formData.image instanceof File) {
         data.append('image', formData.image)
       }
 
-      const created = await axios.post('http://localhost:3000/api/v1/product', data, {
+      const created = await axios.post('/api/v1/product', data, {
         withCredentials: true,
       })
       const createdProduct = created?.data?.data
@@ -97,7 +103,7 @@ export default function ProductManager() {
         dispatch(closeCreateProductForm())
         return
       }
-      setTotalItems((prev)=>prev+1)
+      setTotalItems((prev) => prev + 1)
       dispatch(addProduct(createdProduct))
       toast('تم انشاء المنتج', 'success')
       if (showCreateForm) dispatch(closeCreateProductForm())
@@ -109,19 +115,20 @@ export default function ProductManager() {
   const handleUpdateProduct = async (formData) => {
     // Placeholder only: integrate real API update request in your data layer.
     if (!selectedProduct?._id) return
-    
+
     const data = new FormData()
     data.append('name', formData.name)
     data.append('description', formData.description)
     data.append('category', formData.category)
+    data.append('company', formData.company)
     data.append('price', String(formData.price))
     if (formData.image instanceof File) {
       data.append('image', formData.image)
     }
-      
+
     const updatedProduct = await axios.patch(
-      `http://localhost:3000/api/v1/product/${selectedProduct._id}`,
-      data ,
+      `/api/v1/product/${selectedProduct._id}`,
+      data,
       { withCredentials: true }
     )
 
@@ -142,7 +149,7 @@ export default function ProductManager() {
     const fetchCategories = async () => {
       try {
         dispatch(setCategoriesLoading(true))
-        const categoriesRes = await axios.get('http://localhost:3000/api/v1/category', { withCredentials: true })
+        const categoriesRes = await axios.get('/api/v1/category', { withCredentials: true })
         dispatch(setCategories(categoriesRes?.data?.data || []))
       } catch (error) {
         console.log(error.message)
@@ -152,7 +159,21 @@ export default function ProductManager() {
       }
     }
 
+    const fetchCompanies = async () => {
+      try {
+        dispatch(setCompaniesLoading(true))
+        const companies = await companyApi.getAllCompanies()
+        dispatch(setCompanies(companies || []))
+      } catch (error) {
+        console.log(error.message)
+        dispatch(setCompanies([]))
+      } finally {
+        dispatch(setCompaniesLoading(false))
+      }
+    }
+
     fetchCategories()
+    fetchCompanies()
   }, [dispatch])
 
   useEffect(() => {
@@ -170,8 +191,8 @@ export default function ProductManager() {
 
         // Backend expects category to be a Mongo ObjectId when present.
         if (filters.categoryId) params.set('category', String(filters.categoryId))
-          
-        const productsRes = await axios.get(`http://localhost:3000/api/v1/product/?${params.toString()}`, {
+
+        const productsRes = await axios.get(`/api/v1/product/?${params.toString()}`, {
           withCredentials: true,
         })
 
@@ -183,10 +204,10 @@ export default function ProductManager() {
         // 3) { data: [] }
         const fetchedProducts = Array.isArray(payload) ? payload : payload?.products || payload?.data || []
         const nextCount = payload?.count || 0
-                dispatch(setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []))
+        dispatch(setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []))
         setTotalItems(nextCount)
         setTotalPages(Math.max(1, Math.ceil(nextCount / (Number(pageSize) || 5))))
-        
+
       } catch (error) {
         console.log(error.message)
         dispatch(setProducts([]))
@@ -202,8 +223,8 @@ export default function ProductManager() {
     setPage(1)
   }, [filters, pageSize])
 
- 
-  
+
+
 
   return (
     <section className="admin-stack">
@@ -266,6 +287,7 @@ export default function ProductManager() {
           mode="create"
           product={null}
           categories={categories}
+          companies={companies}
           onSubmit={handleCreateProduct}
           onCancel={() => dispatch(closeCreateProductForm())}
         />
@@ -280,6 +302,7 @@ export default function ProductManager() {
           mode="edit"
           product={selectedProduct}
           categories={categories}
+          companies={companies}
           onSubmit={handleUpdateProduct}
           onCancel={() => dispatch(closeEditProductForm())}
         />

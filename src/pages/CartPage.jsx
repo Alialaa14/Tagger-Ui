@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CartItemCard from '../components/cart/CartItemCard'
@@ -108,7 +106,6 @@ export default function CartPage() {
   if (!authLoading && !isCustomer) {
     return (
       <div className="home-page">
-        <Navbar />
         <main className="cart-page">
           <div className="container">
             <section className="cart-empty-state">
@@ -119,14 +116,12 @@ export default function CartPage() {
             </section>
           </div>
         </main>
-        <Footer />
       </div>
     )
   }
 
   return (
     <div className="home-page">
-      <Navbar />
 
       <main className="cart-page">
         <div className="container" dir="rtl">
@@ -194,7 +189,6 @@ export default function CartPage() {
         </div>
       </main>
 
-      {/* Coupon Modal */}
       <CouponModal
         open={couponOpen}
         onClose={() => setCouponOpen(false)}
@@ -202,8 +196,6 @@ export default function CartPage() {
         onCancelCoupon={handleCancelCoupon}
         initialCode={couponCode}
       />
-
-      <Footer />
     </div>
   )
 }

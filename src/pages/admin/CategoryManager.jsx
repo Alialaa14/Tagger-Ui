@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import CategoryTable from '../../components/admin/CategoryTable'
 import DeleteCategoryModal from '../../components/admin/DeleteCategoryModal'
 import CategoryFormModal from '../../components/admin/CategoryFormModal'
@@ -8,7 +8,7 @@ import toast from "../../utils/toast"
 
 export default function CategoryManager() {
   const [categories, setCategories] = useState([])
-  const [isLoading , setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [formMode, setFormMode] = useState('create')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -27,18 +27,18 @@ export default function CategoryManager() {
     setShowForm(true)
   }
 
-  const handleDeleteCategory = async(categoryId) => {
+  const handleDeleteCategory = async (categoryId) => {
     try {
-      const deletedCategory = await axios.delete(`http://localhost:3000/api/v1/category/${categoryId}`, {withCredentials: true})
+      const deletedCategory = await axios.delete(`/api/v1/category/${categoryId}`, { withCredentials: true })
       if (!deletedCategory) {
-        toast("فشل حذف القسم", "error")
+        toast("??? ??? ?????", "error")
         return
       }
-      toast("تم حذف القسم", "success")
+      toast("?? ??? ?????", "success")
       setCategories((prev) => prev.filter((item) => item._id !== categoryId))
     } catch (error) {
       console.log(error.message)
-      toast("فشل حذف القسم", "error")
+      toast("??? ??? ?????", "error")
     }
   }
 
@@ -66,13 +66,13 @@ export default function CategoryManager() {
       console.log(formData)
 
       const category = await axios.post(
-        'http://localhost:3000/api/v1/category',
+        '/api/v1/category',
         categoryData,
         { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } },
       )
       const createdCategory = category?.data?.data
       if (createdCategory) {
-        setCategories((prev) => [ ...prev , createdCategory])
+        setCategories((prev) => [...prev, createdCategory])
       }
       setShowForm(false)
     } catch (error) {
@@ -89,12 +89,12 @@ export default function CategoryManager() {
       categoryData.append('name', formData.name)
       categoryData.append('description', formData.description)
 
-      if (formData.image instanceof File ) {
+      if (formData.image instanceof File) {
         categoryData.append('image', formData.image)
-      } 
+      }
 
       const updated = await axios.patch(
-        `http://localhost:3000/api/v1/category/${selectedCategory._id}`,
+        `/api/v1/category/${selectedCategory._id}`,
         categoryData,
         { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } },
       )
@@ -114,38 +114,39 @@ export default function CategoryManager() {
     const fetchCategories = async () => {
       // Fetch Get Request to get all categories
       try {
-        const categories = await axios.get('http://localhost:3000/api/v1/category', { withCredentials: true })
+        const categories = await axios.get('/api/v1/category', { withCredentials: true })
         if (!categories) {
           setIsLoading(false)
         }
         else {
-        setCategories(categories.data.data)
-        setIsLoading(false)}
+          setCategories(categories.data.data)
+          setIsLoading(false)
+        }
       } catch (error) {
         console.log(error.message)
         setIsLoading(false)
       }
     }
     fetchCategories()
-  } , [])
+  }, [])
 
   return (
     <section className="admin-stack">
       <div className="admin-card">
         <div className="category-manager-head">
           <div>
-            <h2>إدارة الفئات</h2>
-            <p className="admin-muted">إدارة بيانات الفئات طبقًا للمخطط المطلوب.</p>
+            <h2>????? ??????</h2>
+            <p className="admin-muted">????? ?????? ?????? ????? ?????? ???????.</p>
           </div>
 
           <button type="button" className="admin-btn admin-btn-primary" onClick={handleOpenCreate}>
-            + إضافة فئة جديدة
+            + ????? ??? ?????
           </button>
         </div>
 
-      
+
         {isLoading ? (
-          <div className="category-loading-placeholder">جاري تحميل الفئات...</div>
+          <div className="category-loading-placeholder">???? ????? ??????...</div>
         ) : (
           <CategoryTable
             categories={categories}
@@ -154,16 +155,16 @@ export default function CategoryManager() {
           />
         )}
 
-          {categories.length === 0  && !isLoading && (
+        {categories.length === 0 && !isLoading && (
           <div className="category-empty-placeholder ">
-            لا توجد فئات متاحة حاليا.
+            ?? ???? ???? ????? ?????.
           </div>
         )}
       </div>
 
       <CategoryFormModal
         isOpen={showForm}
-        title={formMode === 'edit' ? 'تعديل الفئة' : 'إنشاء فئة جديدة'}
+        title={formMode === 'edit' ? '????? ?????' : '????? ??? ?????'}
         onClose={() => setShowForm(false)}
       >
         <CategoryForm

@@ -7,7 +7,7 @@ const BASE_URL = `${API_BASE}/trader-products`;
  * Fetch the platform catalog (all products)
  */
 export async function fetchPlatformCatalog(params = {}) {
-  const response = await axios.get(`http://localhost:3000/api/v1/product/catalog`, withCreds({ params }));
+  const response = await axios.get(`/api/v1/product/catalog`, withCreds({ params }));
   return unwrapPayload(response);
 }
 

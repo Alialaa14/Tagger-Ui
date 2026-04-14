@@ -4,8 +4,9 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import NotificationsPanel from '../components/notifications/NotificationsPanel'
-import socket, { onSendOrder, offSendOrder } from '../socket'
+import socket, { onSendOrder, offSendOrder, onOrderCreated, offOrderCreated } from '../socket'
 import axios from 'axios'
+import toast from '../utils/toast'
 import BackNavigator from '../components/common/BackNavigator'
 import notificationSound from '../assets/tritone.mp3'
 import useCountdown from '../hooks/useCountdown'
@@ -70,7 +71,7 @@ function RejectModal({ onClose, onConfirm }) {
 
 // ── Order countdown timer ─────────────────────────────────────
 function OrderCountdown({ createdAt }) {
-  const remaining = useCountdown(createdAt, 5_000)
+  const remaining = useCountdown(createdAt, 5 * 60 * 1000)
   if (remaining <= 0) return null
 
   const pct = (remaining / 5) * 100
@@ -115,6 +116,12 @@ function TraderOrderCard({ order, onAction }) {
             <span className="order-info-label">عدد الأصناف</span>
             <span className="order-info-value">{order.items?.length ?? '—'}</span>
           </div>
+          {order.totalTraderPrice != null && (
+            <div className="order-info-item">
+              <span className="order-info-label">إجمالي منتجاتك</span>
+              <span className="order-info-value" style={{ color: '#f59e0b', fontWeight: 700 }}>{Number(order.totalTraderPrice).toFixed(2)} ج.م</span>
+            </div>
+          )}
         </div>
 
         <OrderCountdown createdAt={order.receivedAt} />
@@ -129,10 +136,13 @@ function TraderOrderCard({ order, onAction }) {
         {order.items?.length > 0 && (
           <div className="order-products-list">
             <p className="order-products-list-title">المنتجات</p>
-            {order.items.map((it, i) => {
+            {order?.items?.map((it, i) => {
               const prodObj = typeof it.productId === 'object' && it.productId ? it.productId : (typeof it.product === 'object' && it.product ? it.product : null);
               const productName = prodObj?.name || (typeof it.productId === 'string' ? it.productId : `منتج ${i + 1}`);
               const productImage = prodObj?.image?.url || prodObj?.image || null;
+              const traderProd = it.traderProduct
+              const traderProdName = typeof traderProd === 'object' ? traderProd?.name : null
+              const traderProdPrice = typeof traderProd === 'object' ? traderProd?.price : null
 
               return (
                 <div key={i} className="order-product-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
@@ -141,7 +151,12 @@ function TraderOrderCard({ order, onAction }) {
                   ) : (
                     <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>📦</div>
                   )}
-                  <span className="order-product-name" style={{ flex: 1 }}>{productName}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span className="order-product-name" style={{ display: 'block' }}>{productName}</span>
+                    {traderProdName && (
+                      <span style={{ display: 'block', fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>🏪 {traderProdName}{traderProdPrice != null ? ` — ${Number(traderProdPrice).toFixed(2)} ج.م` : ''}</span>
+                    )}
+                  </div>
                   <span className="order-product-qty" style={{ fontWeight: 800 }}>× {it.quantity}</span>
                 </div>
               );
@@ -216,13 +231,16 @@ export default function TraderOrdersPage() {
     setLoading(true)
     setError('')
     console.log(user._id)
-    axios.get('http://localhost:3000/api/v1/order', {
+    axios.get('/api/v1/order', {
       params: { userId: user._id, limit, page, sortBy, sortOrder },
       withCredentials: true
     })
       .then((res) => {
         if (!active) return
-        const data = res.data?.data || res.data?.orders || res.data?.results || res.data || []
+        let data = res.data?.data || res.data?.orders || res.data?.results || res.data
+        if (!Array.isArray(data)) {
+          data = Array.isArray(res.data?.data?.orders) ? res.data.data.orders : Array.isArray(res.data?.data) ? res.data.data : []
+        }
         const totalItems = res.data?.total || res.data?.count || data.length
         if (totalItems > 0 && limit > 0) setTotalPages(Math.ceil(totalItems / limit))
         else if (res.data?.totalPages) setTotalPages(res.data.totalPages)
@@ -257,10 +275,10 @@ export default function TraderOrdersPage() {
         console.error('Audio error:', err);
       }
     }
-    
+
     function handleNewOrder(payload, isNew = false) {
       if (isNew) playAudio();
-      
+
       console.log(payload)
       const rawOrder = payload?.order || payload
       const payloadUser = payload?.user || rawOrder?.user || rawOrder?.shop || null;
@@ -294,16 +312,28 @@ export default function TraderOrdersPage() {
       setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId))
     }
 
+    function handleSocketError(err) {
+      const msg = typeof err === 'object' ? err.message || JSON.stringify(err) : String(err)
+      toast(msg, 'error')
+      setError(msg)
+    }
+
     socket.on('sendOrder', (data) => handleNewOrder(data, true))
+    socket.on('orderCreated', (data) => handleNewOrder(data, true))
     socket.on('updateOrderStatus', (data) => handleNewOrder(data, false))
     socket.on('orderUnassigned', handleOrderUnassigned)
+    socket.on('error', handleSocketError)
     if (onSendOrder) onSendOrder((data) => handleNewOrder(data, true))
+    if (onOrderCreated) onOrderCreated((data) => handleNewOrder(data, true))
 
     return () => {
       socket.off('sendOrder')
+      socket.off('orderCreated')
       socket.off('updateOrderStatus')
       socket.off('orderUnassigned', handleOrderUnassigned)
+      socket.off('error', handleSocketError)
       if (offSendOrder) offSendOrder()
+      if (offOrderCreated) offOrderCreated()
     }
   }, [])
 
@@ -324,13 +354,13 @@ export default function TraderOrdersPage() {
 
   const stats = {
     total: orders.length,
-    pending: orders.filter((o) => o.status === 'pending').length,
-    accepted: orders.filter((o) => o.status === 'accepted').length,
-    rejected: orders.filter((o) => o.status === 'rejected').length,
-    shipped: orders.filter((o) => o.status === 'shipped').length,
+    pending: orders?.filter((o) => o.status === 'pending').length,
+    accepted: orders?.filter((o) => o.status === 'accepted').length,
+    rejected: orders?.filter((o) => o.status === 'rejected').length,
+    shipped: orders?.filter((o) => o.status === 'shipped').length,
   }
 
-  const filtered = orders.filter((o) => {
+  const filtered = orders?.filter((o) => {
     const matchSearch = !search || String(o._id || o.id).includes(search)
     const matchFilter = filter === 'all' || o.status === filter
     return matchSearch && matchFilter

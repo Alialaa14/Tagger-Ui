@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
 import socket from '../socket'
 
-const API_BASE = 'http://localhost:3000/api/v1/notification'
+const API_BASE = '/api/v1/notification'
 
 const withCreds = { withCredentials: true }
 
@@ -63,14 +63,14 @@ export function useNotifications() {
   // ── mark one as read (optimistic) ────────────────────────────────────────
   const markAsRead = useCallback(async (id) => {
     if (!id) {
-       console.error("markAsRead called with undefined ID");
-       return;
+      console.error("markAsRead called with undefined ID");
+      return;
     }
     setNotifications((prev) =>
       prev.map((n) => (n._id === id || n.id === id ? { ...n, isRead: true, read: true } : n))
     )
     try {
-      await axios.patch(`http://localhost:3000/api/v1/notifications/${id}/read`, {}, withCreds)
+      await axios.patch(`/api/v1/notifications/${id}/read`, {}, withCreds)
     } catch (err1) {
       try {
         await axios.patch(`${API_BASE}/${id}/read`, {}, withCreds)
@@ -85,7 +85,7 @@ export function useNotifications() {
   const markAllAsRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true, read: true })))
     try {
-      await axios.patch(`http://localhost:3000/api/v1/notifications/read-all`, {}, withCreds)
+      await axios.patch(`/api/v1/notifications/read-all`, {}, withCreds)
     } catch (err1) {
       try {
         await axios.patch(`${API_BASE}/read-all`, {}, withCreds)

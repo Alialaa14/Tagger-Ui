@@ -28,30 +28,30 @@ export default function useCategory(categoryId) {
     }
 
     let mounted = true
-    ;(async () => {
-      setIsLoading(true)
-      setError('')
-      try {
-        const { data } = await axios.get(`http://localhost:3000/api/categories/${encodeURIComponent(categoryId)}`, {
-          withCredentials: true,
-        })
-        const payload = data?.data || data?.category || data
-        if (!mounted) return
-        setCategory(payload ? normalizeCategory(payload) : null)
-      } catch (err) {
-        if (!mounted) return
-        const fallback = seedCategories.find((c) => c._id === categoryId)
-        if (fallback) {
-          setCategory(normalizeCategory(fallback))
-          setError('')
-        } else {
-          setError(err?.response?.data?.message || err?.message || 'تعذر تحميل بيانات الفئة.')
-          setCategory(null)
+      ; (async () => {
+        setIsLoading(true)
+        setError('')
+        try {
+          const { data } = await axios.get(`/api/categories/${encodeURIComponent(categoryId)}`, {
+            withCredentials: true,
+          })
+          const payload = data?.data || data?.category || data
+          if (!mounted) return
+          setCategory(payload ? normalizeCategory(payload) : null)
+        } catch (err) {
+          if (!mounted) return
+          const fallback = seedCategories.find((c) => c._id === categoryId)
+          if (fallback) {
+            setCategory(normalizeCategory(fallback))
+            setError('')
+          } else {
+            setError(err?.response?.data?.message || err?.message || 'تعذر تحميل بيانات الفئة.')
+            setCategory(null)
+          }
+        } finally {
+          if (mounted) setIsLoading(false)
         }
-      } finally {
-        if (mounted) setIsLoading(false)
-      }
-    })()
+      })()
 
     return () => { mounted = false }
   }, [categoryId])

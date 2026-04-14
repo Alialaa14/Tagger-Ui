@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 export default function CategoryFilters({
   filters,
@@ -9,9 +9,9 @@ export default function CategoryFilters({
   const [mobileOpen, setMobileOpen] = useState(false)
   const sortOptions = useMemo(
     () => [
-      { value: 'price_asc', label: 'السعر من الأقل للأعلى' },
-      { value: 'price_desc', label: 'السعر من الأعلى للأقل' },
-      { value: 'newest', label: 'الأحدث' },
+      { value: 'price_asc', label: '????? ?? ????? ??????' },
+      { value: 'price_desc', label: '????? ?? ?????? ?????' },
+      { value: 'newest', label: '??????' },
     ],
     []
   )
@@ -24,23 +24,23 @@ export default function CategoryFilters({
         type="button"
         aria-expanded={mobileOpen}
       >
-        {mobileOpen ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
+        {mobileOpen ? '????? ???????' : '????? ???????'}
       </button>
 
       <div className={`category-filters ${mobileOpen ? 'open' : ''}`}>
         <label className="category-filter-item category-filter-item--search">
-          <span>بحث</span>
+          <span>???</span>
           <input
             type="text"
             className="category-filter-control"
-            placeholder="ابحث داخل الفئة..."
+            placeholder="???? ???? ?????..."
             value={filters.search}
             onChange={(e) => onChange('search', e.target.value)}
           />
         </label>
 
         <label className="category-filter-item">
-          <span>أقل سعر</span>
+          <span>??? ???</span>
           <input
             type="number"
             className="category-filter-control"
@@ -53,7 +53,7 @@ export default function CategoryFilters({
         </label>
 
         <label className="category-filter-item">
-          <span>أعلى سعر</span>
+          <span>???? ???</span>
           <input
             type="number"
             className="category-filter-control"
@@ -66,7 +66,7 @@ export default function CategoryFilters({
         </label>
 
         <label className="category-filter-item">
-          <span>الترتيب</span>
+          <span>???????</span>
           <select
             className="category-filter-control"
             value={filters.sortBy}
@@ -78,9 +78,9 @@ export default function CategoryFilters({
 
         <div className="category-filter-actions">
           <button className="category-filter-reset" type="button" onClick={onReset}>
-            إعادة ضبط
+            ????? ???
           </button>
-          {isFiltering && <span className="category-filter-loading">جاري تحديث النتائج...</span>}
+          {isFiltering && <span className="category-filter-loading">???? ????? ???????...</span>}
         </div>
       </div>
     </section>

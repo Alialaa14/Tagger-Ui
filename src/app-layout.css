@@ -90,8 +90,7 @@ body {
   color: var(--gray-800);
   line-height: 1.5;
   direction: rtl;
-  overflow: hidden;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 /* ─── Scrollbars ──────────────────────────────────────────── */
@@ -156,8 +155,8 @@ body {
 /* ─── App Shell ───────────────────────────────────────────── */
 .app-shell {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
+  flex-direction: column;
+  min-height: 100vh;
   direction: rtl;
   background-color: #f5f7fb;
 }

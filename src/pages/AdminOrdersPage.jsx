@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { deleteOrderById, fetchAdminOrders, updateOrderById, updateOrderStatus } from '../controllers/admin/ordersController'
 import { fetchTraderUsers } from '../controllers/admin/tradersController'
-import socket, { onSendOrder, offSendOrder } from '../socket'
+import socket, { onSendOrder, offSendOrder, onOrderCreated, offOrderCreated } from '../socket'
+import toast from '../utils/toast'
 import BackNavigator from '../components/common/BackNavigator'
 import notificationSound from '../assets/tritone.mp3'
 import useCountdown from '../hooks/useCountdown'
@@ -15,6 +16,18 @@ const STATUS_MAP = {
   shipped: { label: 'تم الشحن', cls: 'status-forwarded', icon: '📦' },
   delivered: { label: 'تم التسليم', cls: 'status-delivered', icon: '🚚' },
   cancelled: { label: 'ملغي', cls: 'status-rejected', icon: '🚫' },
+}
+
+const INVALID_TRANSITIONS = {
+  accepted: ["rejected", "cancelled"], // Usually pending -> accepted is fine, backend snippet noted.
+  rejected: ["accepted", "shipped", "delivered"],
+  shipped: ["pending", "rejected", "cancelled"],
+  delivered: ["pending", "rejected", "cancelled", "shipped"],
+  cancelled: ["shipped", "delivered"],
+};
+
+function canTransition(from, to) {
+  return !INVALID_TRANSITIONS[to]?.includes(from);
 }
 function statusMeta(s) { return STATUS_MAP[s] || { label: s, cls: 'status-pending', icon: '❓' } }
 function fmtDate(d) {
@@ -347,7 +360,7 @@ function RejectModal({ onClose, onConfirm }) {
 
 // -- Order countdown timer -------------------------------------
 function OrderCountdown({ createdAt }) {
-  const remaining = useCountdown(createdAt, 5_000)
+  const remaining = useCountdown(createdAt, 5 * 60 * 1000)
   if (remaining <= 0) return null
 
   const pct = (remaining / 5) * 100
@@ -398,14 +411,51 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
             <span className="order-info-value">{order.products?.length ?? '—'}</span>
           </div>
           <div className="order-info-item">
-            <span className="order-info-label">الإجمالي</span>
+            <span className="order-info-label">إجمالي العميل</span>
             <span className="order-info-value is-green">{order.totalPrice?.toFixed(2) ?? '—'} ج.م</span>
           </div>
+          {order.totalTraderPrice != null && (
+            <div className="order-info-item">
+              <span className="order-info-label">إجمالي التاجر</span>
+              <span className="order-info-value" style={{ color: '#f59e0b', fontWeight: 700 }}>{Number(order.totalTraderPrice).toFixed(2)} ج.م</span>
+            </div>
+          )}
           <div className="order-info-item">
             <span className="order-info-label">المدينة</span>
             <span className="order-info-value">{order.city || '—'}</span>
           </div>
         </div>
+
+        {order.products?.length > 0 && (
+          <div className="order-products-list">
+            <p className="order-products-list-title">المنتجات</p>
+            {order.products.map((it, i) => {
+              const prodObj = typeof it.productId === 'object' && it.productId ? it.productId : null
+              const productName = prodObj?.name || `منتج ${i + 1}`
+              const productImage = prodObj?.image?.url || prodObj?.image || null
+              const traderProd = it.traderProduct
+              const traderProdName = typeof traderProd === 'object' ? traderProd?.name : null
+              const traderProdPrice = typeof traderProd === 'object' ? traderProd?.price : null
+              return (
+                <div key={it._id || i} className="order-product-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', flexWrap: 'wrap' }}>
+                  {productImage ? (
+                    <img src={productImage} alt={productName} style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 38, height: 38, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>📦</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span className="order-product-name">{productName}</span>
+                    {traderProdName && (
+                      <span style={{ display: 'block', fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>🏪 {traderProdName}{traderProdPrice != null ? ` — ${Number(traderProdPrice).toFixed(2)} ج.م` : ''}</span>
+                    )}
+                  </div>
+                  <span className="order-product-qty">× {it.quantity}</span>
+                  <span className="order-product-price">{it.totalPrice?.toFixed(2) ?? '—'} ج.م</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {order.traderInfo && order.traderInfo.name && (
           <div className="order-trader-box">
@@ -418,7 +468,7 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
           </div>
         )}
 
-        <OrderCountdown createdAt={order.forwardedAt} />
+        {!order.status == "accepted" && <OrderCountdown createdAt={order.forwardedAt} />}
 
         {order.note && (
           <div className="order-note">
@@ -431,10 +481,18 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
         <div className="order-card-actions">
           {order.status === 'pending' && (
             <>
-              <button className="ord-btn ord-btn-accept" onClick={() => onAction(order._id || order.id, 'accept')}>
+              <button
+                className="ord-btn ord-btn-accept"
+                onClick={() => onAction(order._id || order.id, 'accept')}
+                disabled={!canTransition(order.status, 'accepted')}
+              >
                 ✅ قبول
               </button>
-              <button className="ord-btn ord-btn-reject" onClick={() => setModal('reject')}>
+              <button
+                className="ord-btn ord-btn-reject"
+                onClick={() => setModal('reject')}
+                disabled={!canTransition(order.status, 'rejected')}
+              >
                 ❌ رفض
               </button>
               <button className="ord-btn ord-btn-forward" onClick={() => setModal('forward')}>
@@ -444,13 +502,22 @@ function AdminOrderCard({ order, traders, onAction, onDelete }) {
           )}
 
           {order.status === 'accepted' && (
-            <button className="ord-btn ord-btn-forward" onClick={() => onAction(order._id || order.id, 'shipped')}>
+            <button
+              className="ord-btn ord-btn-forward"
+              onClick={() => onAction(order._id || order.id, 'shipped')}
+              disabled={!canTransition(order.status, 'shipped')}
+            >
               📦 تعيين كـ "تم الشحن"
             </button>
           )}
 
           {order.status === 'shipped' && (
-            <button className="ord-btn ord-btn-accept" style={{ background: '#10b981', color: '#fff' }} onClick={() => onAction(order._id || order.id, 'delivered')}>
+            <button
+              className="ord-btn ord-btn-accept"
+              style={{ background: '#10b981', color: '#fff' }}
+              onClick={() => onAction(order._id || order.id, 'delivered')}
+              disabled={!canTransition(order.status, 'delivered')}
+            >
               🚚 تعيين كـ "تم التسليم"
             </button>
           )}
@@ -619,15 +686,27 @@ export default function AdminOrdersPage() {
       setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId))
     }
 
+    function handleSocketError(err) {
+      const msg = typeof err === 'object' ? err.message || JSON.stringify(err) : String(err)
+      toast(msg, 'error')
+      setError(msg)
+    }
+
     socket.on('newOrder', (data) => handleNewOrder(data, true))
+    socket.on('orderCreated', (data) => handleNewOrder(data, true))
     socket.on('updateOrderStatus', (data) => handleNewOrder(data, false))
     socket.on('orderUnassigned', handleOrderUnassigned)
+    socket.on('error', handleSocketError)
     onSendOrder((data) => handleNewOrder(data, true))
+    onOrderCreated((data) => handleNewOrder(data, true))
     return () => {
       socket.off('newOrder')
+      socket.off('orderCreated')
       socket.off('updateOrderStatus')
       socket.off('orderUnassigned', handleOrderUnassigned)
+      socket.off('error', handleSocketError)
       offSendOrder()
+      offOrderCreated()
     }
   }, [])
 
@@ -675,20 +754,16 @@ export default function AdminOrdersPage() {
         }))
       } else if (action === 'forward') {
         let payload = extra
-        let inferredTrader = null
         if (extra?.autoAssign) {
-          inferredTrader = traders[0] || null
-          payload = { ...extra, traderId: inferredTrader?._id || inferredTrader?.id || null }
+          payload = { ...extra, traderId: null }
         }
 
-        // Forward order via socket if specific trader selected or auto assigned to a valid trader
-        if (payload.traderId) {
-          socket.emit('forwardOrder', orderId, payload.traderId)
-          // Stamp forwardedAt so the countdown timer starts from this moment
-          setOrders((prev) => prev.map((o) =>
-            (o._id || o.id) === orderId ? { ...o, forwardedAt: new Date().toISOString() } : o
-          ))
-        }
+        // Forward order via socket if specific trader selected or auto assigned to backend
+        socket.emit('forwardOrder', orderId, payload.traderId)
+        // Stamp forwardedAt so the countdown timer starts from this moment
+        setOrders((prev) => prev.map((o) =>
+          (o._id || o.id) === orderId ? { ...o, forwardedAt: new Date().toISOString() } : o
+        ))
       } else if (action === 'edit') {
         const updated = await updateOrderById(orderId, extra)
         setOrders((prev) => prev.map((o) => {

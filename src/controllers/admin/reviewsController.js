@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { unwrapPayload, withCreds } from './shared';
 
-const REVIEW_BASE = 'http://localhost:3000/api/v1/review';
+const REVIEW_BASE = '/api/v1/review';
 
 /**
  * Fetches all reviews across the platform

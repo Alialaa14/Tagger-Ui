@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 
 export default function DeleteConfirmModal({ isOpen, onCancel, onConfirm, pending = false }) {
   if (!isOpen) return null
@@ -6,14 +6,14 @@ export default function DeleteConfirmModal({ isOpen, onCancel, onConfirm, pendin
   return (
     <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
       <div className="admin-modal">
-        <h3>تأكيد الحذف</h3>
-        <p>هل أنت متأكد من حذف هذا المنتج؟</p>
+        <h3>????? ?????</h3>
+        <p>?? ??? ????? ?? ??? ??? ???????</p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn-ghost" onClick={onCancel} disabled={pending}>
-            إلغاء
+            ?????
           </button>
           <button type="button" className="admin-btn admin-btn-danger" onClick={onConfirm} disabled={pending}>
-            حذف
+            ???
           </button>
         </div>
       </div>

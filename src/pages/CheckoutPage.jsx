@@ -83,6 +83,7 @@ export default function CheckoutPage() {
     finalTotal,
     couponCode,
     couponDiscount,
+    couponMeta,
     note,
     clear,
   } = useCart()
@@ -150,6 +151,10 @@ export default function CheckoutPage() {
     if (!form.governorate.trim()) e.governorate = 'المحافظة مطلوبة'
     if (!form.city.trim()) e.city = 'المدينة مطلوبة'
     if (!form.address.trim()) e.address = 'العنوان مطلوب'
+    else if (form.address.trim().length < 3) e.address = 'العنوان يجب أن يكون 3 حروف على الأقل'
+    else if (form.address.trim().length > 50) e.address = 'العنوان لا يمكن أن يتجاوز 50 حرفاً'
+    
+    if (form.notes.trim().length > 500) e.notes = 'الملاحظات لا يمكن أن تتجاوز 500 حرف'
     return e
   }
 
@@ -160,23 +165,17 @@ export default function CheckoutPage() {
     // ← Wire your API order creation here:
     const orderPayload = {
       shopId: user?._id || user?.id,
-      traderId: null,
       products: (lineItems || []).map((line) => ({
         productId: line?.item?.productId || line?.item?._id || line?.item?.id,
         quantity: Number(line?.item?.quantity) || 1,
         totalPrice: Number(line?.pricing?.finalTotal) || 0,
       })),
-      isPaid: false,
-      isAccepted: false,
-      isRejected: false,
-      isDelivered: false,
-      isPacked: false,
-      isCancelled: false,
-      isReturned: false,
       totalPrice: Number(finalTotal) || 0,
       totalQuantity: Number(totalQuantity) || 0,
-      note: note || '',
       address: form.address || '',
+      note: form.notes || note || '',
+      paymentMethod: form.paymentMethod === 'cash' ? 'Cash' : 'Online',
+      coupon: couponMeta?.id || null
     }
     try {
       console.log(orderPayload)

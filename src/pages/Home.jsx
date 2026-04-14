@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../components/Navbar'
 import BannerCarousel from '../components/BannerCarousel'
 import ProductCard from '../components/ProductCard'
-import Footer from '../components/Footer'
 import CategoryCard from '../components/home/CategoryCard'
 import CategorySkeleton from '../components/home/CategorySkeleton'
 import socket from '../socket'
@@ -17,6 +15,7 @@ import CustomerTestimonials from '../components/home/CustomerTestimonials'
 import NewsletterSignup from '../components/home/NewsletterSignup'
 import { useAuth } from '../context/AuthContext'
 import TraderDashboardControls from '../components/home/TraderDashboardControls'
+import CompanyGrid from '../components/home/CompanyGrid'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -43,10 +42,11 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <Navbar />
 
       <main className="home-content">
         <BannerCarousel />
+
+        <CompanyGrid />
 
         {isTrader && <TraderDashboardControls />}
 
@@ -128,24 +128,10 @@ export default function Home() {
 
         <CustomerTestimonials />
 
-        <section className="values-banner">
-          <div className="values-inner">
-            <div>
-              <h3>قيمنا في كل طلب</h3>
-              <p>جودة موثوقة، أسعار واضحة، ودعم سريع يساعدك على النمو.</p>
-            </div>
-            <div className="values-tags">
-              <span>تجربة عربية متكاملة</span>
-              <span>شحن سريع</span>
-              <span>دفع آمن</span>
-            </div>
-          </div>
-        </section>
+
 
         <NewsletterSignup />
       </main>
-
-      <Footer />
     </div>
   )
 }

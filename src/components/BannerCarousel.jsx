@@ -1,72 +1,54 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { bannerApi } from '../utils/bannerApi'
 
-const SLIDES = [
-  {
-    id: 1,
-    bg: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)',
-    badge: '🛒 عرض الأسبوع',
-    title: 'خضروات طازجة يومياً',
-    subtitle: 'مباشرة من المزارع إلى بيتك — توصيل في غضون ساعتين',
-    cta: 'تسوق الآن',
-    ctaLink: '/categories',
-    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80',
-    accent: '#4ade80',
-  },
-  {
-    id: 2,
-    bg: 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 50%, #2563eb 100%)',
-    badge: '❄️ منتجات مبردة',
-    title: 'ألبان ومنتجات أطباء',
-    subtitle: 'تشكيلة واسعة من الألبان والأجبان الطازجة بأفضل الأسعار',
-    cta: 'اكتشف المزيد',
-    ctaLink: '/categories',
-    image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80',
-    accent: '#60a5fa',
-  },
-  {
-    id: 3,
-    bg: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #ea580c 100%)',
-    badge: '🔥 أسعار لا تُفوَّت',
-    title: 'تخفيضات نهاية الأسبوع',
-    subtitle: 'وفّر حتى ٤٠٪ على المنتجات المختارة — العرض لفترة محدودة',
-    cta: 'شاهد العروض',
-    ctaLink: '/categories',
-    image: 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&q=80',
-    accent: '#fb923c',
-  },
-  {
-    id: 4,
-    bg: 'linear-gradient(135deg, #4a1d96 0%, #7c3aed 50%, #8b5cf6 100%)',
-    badge: '🧴 العناية الشخصية',
-    title: 'منتجات التنظيف والعناية',
-    subtitle: 'كل ما تحتاجه للمنزل من منظفات ومستلزمات العناية',
-    cta: 'تصفح المنتجات',
-    ctaLink: '/categories',
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=600&q=80',
-    accent: '#c084fc',
-  },
-]
+const DEFAULT_BG = 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)';
+const DEFAULT_ACCENT = '#4ade80';
+
 
 export default function BannerCarousel() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const [animDir, setAnimDir] = useState('next')
-  const [slides, setSlides] = useState(SLIDES)
+  const [slides, setSlides] = useState([])
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Read from admin configured localStorage if available
-    const stored = localStorage.getItem('tagger_banners')
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSlides(parsed)
-        }
-      } catch (e) {}
-    }
+    fetchBanners()
   }, [])
+
+  const fetchBanners = async () => {
+    try {
+      setLoading(true)
+      const data = await bannerApi.getActiveBanners()
+      console.log(data)
+
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map((b, idx) => ({
+          id: b._id,
+          // Use distinct gradients based on index for a premium feel if not in DB
+          bg: idx % 3 === 0 ? 'linear-gradient(135deg, #14532d 0%, #166534 50%, #15803d 100%)' :
+            idx % 3 === 1 ? 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 50%, #2563eb 100%)' :
+              'linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #ea580c 100%)',
+          badge: b.isActive ? '⚡ عرض مباشر' : 'إعلان',
+          title: b.title,
+          subtitle: b.subtitle,
+          cta: b.buttonText || 'تسوق الآن',
+          ctaLink: b.buttonLink || '/',
+          image: b.imageUrl?.url || b.image,
+          accent: idx % 3 === 0 ? '#4ade80' : idx % 3 === 1 ? '#60a5fa' : '#fb923c',
+        }))
+        setSlides(mapped)
+      } else {
+        setSlides(FALLBACK_SLIDES)
+      }
+    } catch (e) {
+      setSlides(FALLBACK_SLIDES)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const goTo = useCallback((i, dir = 'next') => {
     setAnimDir(dir)
@@ -82,9 +64,17 @@ export default function BannerCarousel() {
     return () => clearInterval(id)
   }, [paused, next])
 
-  const slide = slides[index] || slides[0]
+  if (loading) {
+    return (
+      <section className="bc-root" style={{ background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loader">جاري التحميل...</div>
+      </section>
+    )
+  }
 
   if (!slides || slides.length === 0) return null
+
+  const slide = slides[index] || slides[0]
 
   return (
     <section

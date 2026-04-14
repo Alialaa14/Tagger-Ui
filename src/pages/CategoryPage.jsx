@@ -7,6 +7,7 @@ import CategoryFilters from '../components/category/CategoryFilters'
 import CategoryProductsGrid from '../components/category/CategoryProductsGrid'
 import { useCategories } from '../context/CategoriesContext'
 import BackNavigator from '../components/common/BackNavigator'
+import FeaturedBrands from '../components/home/FeaturedBrands'
 import './home.css'
 import './category-page.css'
 
@@ -16,6 +17,7 @@ function parseFilters(searchParams) {
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
     sortBy: searchParams.get('sort') || 'newest',
+    company: searchParams.get('company') || '',
   }
 }
 
@@ -80,6 +82,7 @@ export default function CategoryPage() {
     if (filters.minPrice) next.minPrice = filters.minPrice
     if (filters.maxPrice) next.maxPrice = filters.maxPrice
     if (filters.sortBy && filters.sortBy !== 'newest') next.sort = filters.sortBy
+    if (filters.company) next.company = filters.company
     setSearchParams(next, { replace: true })
   }, [filters, setSearchParams])
 
@@ -92,6 +95,13 @@ export default function CategoryPage() {
       const price = Number(item?.price || 0)
       if (minPrice != null && !Number.isNaN(minPrice) && price < minPrice) return false
       if (maxPrice != null && !Number.isNaN(maxPrice) && price > maxPrice) return false
+      
+      // Company filter
+      if (filters.company) {
+        const itemCompanyId = item.company?._id || item.company
+        if (itemCompanyId !== filters.company) return false
+      }
+
       if (!q) return true
       const haystack = `${item?.name || ''} ${item?.description || ''}`.toLowerCase()
       return haystack.includes(q)
@@ -101,7 +111,7 @@ export default function CategoryPage() {
     else if (filters.sortBy === 'price_desc') next.sort((a, b) => Number(b.price || 0) - Number(a.price || 0))
 
     return next
-  }, [categoryProducts, filters.minPrice, filters.maxPrice, filters.sortBy, debouncedSearch])
+  }, [categoryProducts, filters.minPrice, filters.maxPrice, filters.sortBy, filters.company, debouncedSearch])
 
   function onFilterChange(field, value) {
     setFilters((prev) => ({ ...prev, [field]: value }))
@@ -113,6 +123,7 @@ export default function CategoryPage() {
       minPrice: '',
       maxPrice: '',
       sortBy: 'newest',
+      company: '',
     })
   }
 
@@ -121,6 +132,10 @@ export default function CategoryPage() {
       <Navbar />
 
       {category && <CategoryHero category={category} />}
+
+      <div style={{ padding: '0 20px' }}>
+          <FeaturedBrands />
+      </div>
 
       <main className="container category-main-v2">
         <div style={{ marginTop: 24, marginBottom: -10 }} dir="rtl">

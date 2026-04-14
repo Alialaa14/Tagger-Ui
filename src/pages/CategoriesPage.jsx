@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
 import CategoryCard from '../components/home/CategoryCard'
 import CategorySkeleton from '../components/home/CategorySkeleton'
 import CategoriesFilters from '../components/category/CategoriesFilters'
@@ -10,6 +8,7 @@ import BackNavigator from '../components/common/BackNavigator'
 import './home.css'
 import './category-page.css'
 import './categories-page.css'
+import CompanyGrid from '../components/home/CompanyGrid'
 
 function parseFilters(searchParams) {
   return {
@@ -75,7 +74,6 @@ export default function CategoriesPage() {
 
   return (
     <div className="home-page categories-page-v2">
-      <Navbar />
 
       <section className="categories-banner" dir="rtl">
         <div className="categories-banner__overlay" />
@@ -117,9 +115,11 @@ export default function CategoriesPage() {
             ))}
           </div>
         )}
-      </main>
 
-      <Footer />
+        <div style={{ marginTop: '60px' }}>
+          <CompanyGrid />
+        </div>
+      </main>
     </div>
   )
 }

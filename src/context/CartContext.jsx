@@ -4,7 +4,7 @@ import { calculateCartTotals } from '../utils/cartPricing'
 import { useAuth } from './AuthContext'
 
 const CartContext = createContext(null)
-const API_BASE_URL = 'http://localhost:3000/api/v1/cart'
+const API_BASE_URL = '/api/v1/cart'
 const EMPTY_CART_STATE = {
   items: [],
   couponName: '',
@@ -61,8 +61,8 @@ function normalizeCartItem(raw) {
     discounts: Array.isArray(raw?.discounts)
       ? raw.discounts
       : Array.isArray(productRaw?.discount)
-      ? productRaw.discount
-      : [],
+        ? productRaw.discount
+        : [],
   }
 }
 
@@ -161,8 +161,8 @@ function normalizeCartPayload(payload) {
   const note = cartRoot?.note !== undefined && cartRoot?.note !== null
     ? String(cartRoot.note)
     : root?.note !== undefined && root?.note !== null
-    ? String(root.note)
-    : null
+      ? String(root.note)
+      : null
 
   return { items, couponName, couponCode, couponMeta, note, couponValue }
 }
@@ -467,7 +467,7 @@ export function CartProvider({ children }) {
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Failed to change quantity.'
       setError(msg)
-      getCart().catch(() => {})
+      getCart().catch(() => { })
       return { ok: false, message: msg }
     }
   }, [ensureUserCartAccess, hydrateFromPayload, getCart])
@@ -520,7 +520,7 @@ export function CartProvider({ children }) {
       setState({ ...EMPTY_CART_STATE })
       return
     }
-    getCart().catch(() => {})
+    getCart().catch(() => { })
   }, [getCart, isAdmin, authLoading, user])
 
   const totals = useMemo(
@@ -538,6 +538,7 @@ export function CartProvider({ children }) {
     couponName: state.couponName,
     couponCode: state.couponCode,
     couponValue: state.couponValue,
+    couponMeta: state.couponMeta,
     // FIX: expose both `note` and `orderNote` so CartNote and CartPage both work
     note: state.note,
     orderNote: state.note,

@@ -1,6 +1,7 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchAdminDashboardStats } from '../../controllers/admin/dashboardController'
+import BannerCarousel from '../../components/BannerCarousel'
 import "./admin-theme.css"
 
 export default function AdminDashboard() {
@@ -31,24 +32,24 @@ export default function AdminDashboard() {
   return (
     <section className="admin-stack">
       <div className="admin-card">
-        <p className="admin-kicker">إدارة المتجر</p>
-        <h2>لوحة الإدارة</h2>
+        <p className="admin-kicker">????? ??????</p>
+        <h2>???? ???????</h2>
         <p className="admin-muted">
-          يمكنك من هنا إدارة المنتجات والفئات والطلبات مع نظرة سريعة على الأداء.
+          ????? ?? ??? ????? ???????? ??????? ???????? ?? ???? ????? ??? ??????.
         </p>
 
         <div className="admin-grid-2">
-          <Link className="admin-quick-link" to="/admin/products">إدارة المنتجات</Link>
-          <Link className="admin-quick-link" to="/admin/products/new">إنشاء منتج جديد</Link>
-          <Link className="admin-quick-link" to="/admin/orders">إدارة الطلبات</Link>
-          <Link className="admin-quick-link" to="/admin/categories">إدارة الفئات</Link>
+          <Link className="admin-quick-link" to="/admin/products">????? ????????</Link>
+          <Link className="admin-quick-link" to="/admin/products/new">????? ???? ????</Link>
+          <Link className="admin-quick-link" to="/admin/orders">????? ???????</Link>
+          <Link className="admin-quick-link" to="/admin/categories">????? ??????</Link>
         </div>
       </div>
 
       <div className="admin-card">
-        <p className="admin-kicker">إحصائيات</p>
-        <h2>ملخص الطلبات</h2>
-        <p className="admin-muted">أرقام سريعة لإجمالي الطلبات وقيمتها.</p>
+        <p className="admin-kicker">????????</p>
+        <h2>???? ???????</h2>
+        <p className="admin-muted">????? ????? ??????? ??????? ???????.</p>
         {error && <p className="admin-muted" style={{ color: '#dc2626', marginTop: 10 }}>{error}</p>}
 
         {loading && (
@@ -56,7 +57,7 @@ export default function AdminDashboard() {
             {[1, 2, 3, 4].map((n) => (
               <div key={n} className="admin-kpi">
                 <span className="admin-kpi-label">...</span>
-                <span className="admin-kpi-value">—</span>
+                <span className="admin-kpi-value">�</span>
               </div>
             ))}
           </div>
@@ -65,32 +66,32 @@ export default function AdminDashboard() {
         {!loading && stats && (
           <div className="admin-kpi-grid">
             <div className="admin-kpi">
-              <span className="admin-kpi-label">إجمالي الطلبات</span>
+              <span className="admin-kpi-label">?????? ???????</span>
               <span className="admin-kpi-value">{stats.totalOrders}</span>
             </div>
             <div className="admin-kpi">
-              <span className="admin-kpi-label">طلبات قيد الانتظار</span>
+              <span className="admin-kpi-label">????? ??? ????????</span>
               <span className="admin-kpi-value">{stats.pendingOrders}</span>
             </div>
             <div className="admin-kpi">
-              <span className="admin-kpi-label">طلبات مقبولة</span>
+              <span className="admin-kpi-label">????? ??????</span>
               <span className="admin-kpi-value">{stats.acceptedOrders}</span>
             </div>
             <div className="admin-kpi">
-              <span className="admin-kpi-label">طلبات مرفوضة</span>
+              <span className="admin-kpi-label">????? ??????</span>
               <span className="admin-kpi-value">{stats.rejectedOrders}</span>
             </div>
             <div className="admin-kpi">
-              <span className="admin-kpi-label">طلبات محوّلة</span>
+              <span className="admin-kpi-label">????? ??????</span>
               <span className="admin-kpi-value">{stats.forwardedOrders}</span>
             </div>
             <div className="admin-kpi">
-              <span className="admin-kpi-label">إجمالي المبيعات</span>
-              <span className="admin-kpi-value">{fmtMoney(stats.revenueTotal)} ج.م</span>
+              <span className="admin-kpi-label">?????? ????????</span>
+              <span className="admin-kpi-value">{fmtMoney(stats.revenueTotal)} ?.?</span>
             </div>
             <div className="admin-kpi">
-              <span className="admin-kpi-label">متوسط قيمة الطلب</span>
-              <span className="admin-kpi-value">{fmtMoney(stats.revenueAvg)} ج.م</span>
+              <span className="admin-kpi-label">????? ???? ?????</span>
+              <span className="admin-kpi-value">{fmtMoney(stats.revenueAvg)} ?.?</span>
             </div>
           </div>
         )}

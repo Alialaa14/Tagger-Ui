@@ -22,9 +22,9 @@ function EditProductModal({ product, onClose, onSave }) {
 
     setLoading(true)
     try {
-      await onSave(product._id, { 
-        price: Number(price), 
-        quantity: quantity !== '' ? Number(quantity) : undefined 
+      await onSave(product._id, {
+        price: Number(price),
+        quantity: quantity !== '' ? Number(quantity) : undefined
       })
       onClose()
     } catch (err) {
@@ -41,15 +41,15 @@ function EditProductModal({ product, onClose, onSave }) {
           <h2 className="tmp-modal-title">تعديل المنتج</h2>
           <button className="tmp-modal-close" onClick={onClose}>✕</button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="tmp-modal-body">
           <div className="tmp-form-group">
             <label className="tmp-label">سعر البيع الخاص بك (ج.م)</label>
-            <input 
-              type="number" 
-              className="tmp-input" 
-              value={price} 
-              onChange={(e) => setPrice(e.target.value)} 
+            <input
+              type="number"
+              className="tmp-input"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
               placeholder="أدخل السعر الجديد..."
               required
             />
@@ -57,11 +57,11 @@ function EditProductModal({ product, onClose, onSave }) {
 
           <div className="tmp-form-group">
             <label className="tmp-label">الكمية المتاحة</label>
-            <input 
-              type="number" 
-              className="tmp-input" 
-              value={quantity} 
-              onChange={(e) => setQuantity(e.target.value)} 
+            <input
+              type="number"
+              className="tmp-input"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
               placeholder="أدخل الكمية..."
             />
           </div>
@@ -86,11 +86,11 @@ export default function TraderMyProductsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [editProduct, setEditProduct] = useState(null)
-  
+
   const fetchMyProducts = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('http://localhost:3000/api/v1/trader-products/my', {
+      const res = await axios.get('/api/v1/trader-products/my', {
         withCredentials: true
       });
       // Handle different response structures
@@ -109,7 +109,7 @@ export default function TraderMyProductsPage() {
 
   const handleUpdate = async (id, payload) => {
     try {
-      await axios.patch(`http://localhost:3000/api/v1/trader-products/${id}`, payload, {
+      await axios.patch(`/api/v1/trader-products/${id}`, payload, {
         withCredentials: true
       });
       toast("تم تحديث المنتج بنجاح", "success")
@@ -124,7 +124,7 @@ export default function TraderMyProductsPage() {
     if (!window.confirm("هل أنت متأكد من حذف هذا المنتج من متجرك؟")) return
 
     try {
-      await axios.delete(`http://localhost:3000/api/v1/trader-products/${id}`, {
+      await axios.delete(`/api/v1/trader-products/${id}`, {
         withCredentials: true
       });
       toast("تم حذف المنتج من متجرك", "success")
@@ -178,7 +178,7 @@ export default function TraderMyProductsPage() {
             {products.map(item => {
               const product = item.productId || {}
               const productImg = (typeof product.image === 'string' ? product.image : product.image?.url) || 'https://placehold.co/400x400?text=No+Image';
-              
+
               return (
                 <div key={item._id} className="tmp-card">
                   <div className="tmp-card-img-wrap">
@@ -188,7 +188,7 @@ export default function TraderMyProductsPage() {
                   <div className="tmp-card-body">
                     <h3 className="tmp-card-title">{product.name || "منتج غير معروف"}</h3>
                     <span className="tmp-card-cat">{product.category?.name || "بدون تصنيف"}</span>
-                    
+
                     <div className="tmp-card-details">
                       <div className="tmp-detail-row">
                         <span className="tmp-detail-label">سعر البيع:</span>
@@ -226,9 +226,9 @@ export default function TraderMyProductsPage() {
       </main>
 
       {editProduct && (
-        <EditProductModal 
-          product={editProduct} 
-          onClose={() => setEditProduct(null)} 
+        <EditProductModal
+          product={editProduct}
+          onClose={() => setEditProduct(null)}
           onSave={handleUpdate}
         />
       )}

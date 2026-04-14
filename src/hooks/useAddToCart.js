@@ -1,4 +1,4 @@
-﻿import { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -21,14 +21,14 @@ export default function useAddToCart() {
           "",
       ).toLowerCase();
       if (role !== "customer" && role !== "user") {
-        const msg = "الإضافة للسلة متاحة للعملاء فقط.";
+        const msg = "??????? ????? ????? ??????? ???.";
         setError(msg);
         return { ok: false, message: msg };
       }
 
       const productId = resolveProductId(product);
       if (!productId) {
-        setError("لا يمكن إضافة المنتج لأن معرف المنتج غير متوفر.");
+        setError("?? ???? ????? ?????? ??? ???? ?????? ??? ?????.");
         return { ok: false, message: "Missing productId" };
       }
 
@@ -37,7 +37,7 @@ export default function useAddToCart() {
       try {
         const res = await addToCart(product, 1);
         if (!res?.ok) {
-          const msg = res?.message || "فشل إضافة المنتج إلى السلة.";
+          const msg = res?.message || "??? ????? ?????? ??? ?????.";
           setError(msg);
           return { ok: false, message: msg };
         }
@@ -46,7 +46,7 @@ export default function useAddToCart() {
         const msg =
           err?.response?.data?.message ||
           err?.message ||
-          "فشل إضافة المنتج إلى السلة.";
+          "??? ????? ?????? ??? ?????.";
         setError(msg);
         return { ok: false, message: msg };
       } finally {

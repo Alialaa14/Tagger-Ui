@@ -16,7 +16,7 @@ export default function Login() {
     e.preventDefault()
     try {
       const payload = { phoneNumber, password }
-      const { data: res } = await axios.post('http://localhost:3000/api/v1/auth/login', payload, { withCredentials: true })
+      const { data: res } = await axios.post('/api/v1/auth/login', payload, { withCredentials: true })
       if (!res || !res.success) {
         toast(res?.message || 'فشل تسجيل الدخول', 'error')
         return

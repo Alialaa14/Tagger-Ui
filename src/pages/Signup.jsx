@@ -54,7 +54,7 @@ export default function Signup() {
       formData.set('role', form.role)
       if (imageFile) formData.set('logo', imageFile)
       console.log(formData)
-      const { data: res } = await axios.post('http://localhost:3000/api/v1/auth/register', formData, {
+      const { data: res } = await axios.post('/api/v1/auth/register', formData, {
         withCredentials: true,
       })
       console.log(imageFile)

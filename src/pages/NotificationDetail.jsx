@@ -34,7 +34,7 @@ const TYPE_META = {
   alert: { icon: '🔔', label: 'تنبيه', color: '#ef4444' },
 }
 
-const API_BASE = 'http://localhost:3000/api/v1/notification'
+const API_BASE = '/api/v1/notification'
 
 // ─── main component ───────────────────────────────────────────────────────────
 

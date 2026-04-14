@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import CategoryCard from './CategoryCard'
 
 export default function CategoryTable({ categories, onEdit, onDelete }) {

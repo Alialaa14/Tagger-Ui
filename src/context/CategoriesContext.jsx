@@ -3,7 +3,7 @@ import axios from 'axios'
 
 const CategoriesContext = createContext(null)
 
-const API_BASE_URL = 'http://localhost:3000/api/v1/category'
+const API_BASE_URL = '/api/v1/category'
 
 function normalizeCategory(item) {
   if (!item || typeof item !== 'object') return null

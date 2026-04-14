@@ -7,6 +7,7 @@ const initialForm = {
   description: "",
   price: "",
   category: "",
+  company: "",
   discounts: [],
   image: null,
   previewUrl: "",
@@ -16,6 +17,12 @@ function toCategoryValue(category) {
   if (!category) return "";
   if (typeof category === "string") return category;
   return category._id || category.id || "";
+}
+
+function toCompanyValue(company) {
+  if (!company) return "";
+  if (typeof company === "string") return company;
+  return company._id || company.id || "";
 }
 
 function toDiscounts(discount) {
@@ -32,6 +39,7 @@ function formFromProduct(product) {
     description: product?.description || "",
     price: product?.price != null ? Number(product.price) : "",
     category: toCategoryValue(product?.category),
+    company: toCompanyValue(product?.company),
     discounts: toDiscounts(product?.discount),
     image: null,
     previewUrl: product?.image?.url || "",
@@ -43,6 +51,8 @@ const productAdminSlice = createSlice({
   initialState: {
     categories: [],
     categoriesLoading: false,
+    companies: [],
+    companiesLoading: false,
     products: initialProducts,
     selectedProduct: null,
     showCreateForm: false,
@@ -55,11 +65,17 @@ const productAdminSlice = createSlice({
     setCategories(state, action) {
       state.categories = Array.isArray(action.payload) ? action.payload : [];
     },
+    setCompanies(state, action) {
+      state.companies = Array.isArray(action.payload) ? action.payload : [];
+    },
     setProducts(state, action) {
       state.products = Array.isArray(action.payload) ? action.payload : [];
     },
     setCategoriesLoading(state, action) {
       state.categoriesLoading = Boolean(action.payload);
+    },
+    setCompaniesLoading(state, action) {
+      state.companiesLoading = Boolean(action.payload);
     },
     openCreateProductForm(state) {
       state.showCreateForm = true;
@@ -146,8 +162,10 @@ const productAdminSlice = createSlice({
 
 export const {
   setCategories,
+  setCompanies,
   setProducts,
   setCategoriesLoading,
+  setCompaniesLoading,
   openCreateProductForm,
   closeCreateProductForm,
   openEditProductForm,

@@ -182,12 +182,15 @@ export default function CustomerOrdersPage() {
       setLoading(true)
       try {
         const userId = user._id || user.id
-        const res = await axios.get('http://localhost:3000/api/v1/order', {
+        const res = await axios.get('/api/v1/order', {
           params: { userId, limit, page, sortBy, sortOrder },
           withCredentials: true
         })
 
-        const fetchedOrders = res.data?.data || res.data?.orders || res.data?.results || []
+        let fetchedOrders = res.data?.data || res.data?.orders || res.data?.results
+        if (!Array.isArray(fetchedOrders)) {
+          fetchedOrders = Array.isArray(res.data?.data?.orders) ? res.data.data.orders : Array.isArray(res.data?.data) ? res.data.data : []
+        }
         setOrders(fetchedOrders)
 
         const totalItems = res.data?.total || res.data?.count || 0

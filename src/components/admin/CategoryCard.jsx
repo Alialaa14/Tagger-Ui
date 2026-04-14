@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 
 export default function CategoryCard({ category, onEdit, onDelete }) {
   return (
@@ -15,10 +15,10 @@ export default function CategoryCard({ category, onEdit, onDelete }) {
 
         <div className="table-actions">
           <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onEdit(category)}>
-            تعديل
+            ?????
           </button>
           <button type="button" className="admin-btn admin-btn-danger" onClick={() => onDelete(category)}>
-            حذف
+            ???
           </button>
         </div>
       </div>

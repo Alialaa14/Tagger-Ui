@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 
 export default function DeleteCategoryModal({ isOpen, onCancel, onConfirm, pending = false }) {
   if (!isOpen) return null
@@ -6,8 +6,8 @@ export default function DeleteCategoryModal({ isOpen, onCancel, onConfirm, pendi
   return (
     <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
       <div className="admin-modal">
-        <h3>تأكيد الحذف</h3>
-        <p>هل أنت متأكد من حذف هذه الفئة؟</p>
+        <h3>????? ?????</h3>
+        <p>?? ??? ????? ?? ??? ??? ??????</p>
 
         <div className="admin-modal-actions">
           <button
@@ -16,7 +16,7 @@ export default function DeleteCategoryModal({ isOpen, onCancel, onConfirm, pendi
             onClick={onCancel}
             disabled={pending}
           >
-            إلغاء
+            ?????
           </button>
           <button
             type="button"
@@ -24,7 +24,7 @@ export default function DeleteCategoryModal({ isOpen, onCancel, onConfirm, pendi
             onClick={onConfirm}
             disabled={pending}
           >
-            حذف
+            ???
           </button>
         </div>
       </div>

@@ -11,6 +11,11 @@ function getCategoryName(category, categories = []) {
   return category.name || category.title || '-'
 }
 
+function getCompanyName(company) {
+  if (!company) return '-'
+  return company.name || '-'
+}
+
 function hasDiscount(discount) {
   return Array.isArray(discount) && discount.length > 0
 }
@@ -26,6 +31,7 @@ export default function ProductTable({ products, categories = [], onEdit, onDele
               <th>الاسم</th>
               <th>السعر</th>
               <th>الفئة</th>
+              <th>الشركة</th>
               <th>الخصم</th>
               <th>الإجراءات</th>
             </tr>
@@ -39,6 +45,7 @@ export default function ProductTable({ products, categories = [], onEdit, onDele
                 <td>{product?.name}</td>
                 <td>{product?.price} ج.م</td>
                 <td>{getCategoryName(product?.category, categories)}</td>
+                <td>{getCompanyName(product?.company)}</td>
                 <td>
                   {hasDiscount(product?.discount) ? (
                     <span className="discount-pill">يوجد خصم</span>
@@ -69,14 +76,12 @@ export default function ProductTable({ products, categories = [], onEdit, onDele
             <div className="product-mobile-body">
               <h3>{product.name}</h3>
               <p>{product.price} ج.م</p>
-              <p>{getCategoryName(product.category, categories)}</p>
+              <p>الفئة: {getCategoryName(product.category, categories)}</p>
+              <p>الشركة: {getCompanyName(product.company)}</p>
               <span className={`discount-pill ${hasDiscount(product.discount) ? '' : 'is-muted'}`}>
                 {hasDiscount(product.discount) ? 'يوجد خصم' : 'بدون خصم'}
               </span>
               <div className="table-actions product-table-actions">
-                <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onEdit(product)}>
-                  تعديل
-                </button>
                 <button type="button" className="admin-btn admin-btn-danger" onClick={() => onDelete(product)}>
                   حذف
                 </button>

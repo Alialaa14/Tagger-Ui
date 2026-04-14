@@ -1,27 +1,16 @@
 import React, { useState, useEffect } from 'react'
+import { bannerApi } from '../../utils/bannerApi'
+import BannerFormModal from '../../components/admin/BannerFormModal'
 import './admin-theme.css'
 
 export default function PageSettings() {
   const [activeTab, setActiveTab] = useState('banners')
 
   // Banners
-  const [banners, setBanners] = useState(() => {
-    const saved = localStorage.getItem('tagger_banners')
-    if (saved) return JSON.parse(saved)
-    return [
-      {
-        id: Date.now(),
-        bg: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)',
-        badge: '🛒 عرض الأسبوع',
-        title: 'خضروات طازجة يومياً',
-        subtitle: 'مباشرة من المزارع إلى بيتك — توصيل في غضون ساعتين',
-        cta: 'تسوق الآن',
-        ctaLink: '/categories',
-        image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80',
-        accent: '#4ade80',
-      }
-    ]
-  })
+  const [banners, setBanners] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
+  const [editingBanner, setEditingBanner] = useState(null)
 
   // Brands
   const [brands, setBrands] = useState(() => {
@@ -52,8 +41,20 @@ export default function PageSettings() {
   const [toast, setToast] = useState('')
 
   useEffect(() => {
-    localStorage.setItem('tagger_banners', JSON.stringify(banners))
-  }, [banners])
+    fetchBanners()
+  }, [])
+
+  const fetchBanners = async () => {
+    try {
+      setLoading(true)
+      const data = await bannerApi.getAllBanners()
+      setBanners(data || [])
+    } catch (err) {
+      showToast('❌ فشل تحميل البانرات')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     localStorage.setItem('tagger_brands', JSON.stringify(brands))
@@ -69,15 +70,67 @@ export default function PageSettings() {
   }
 
   // Banner Actions
-  const addBanner = () => {
-    setBanners(prev => [...prev, {
-      id: Date.now(), bg: '#0f172a', badge: 'جديد', title: 'عنوان الشريحة', subtitle: 'وصف قصير', cta: 'اضغط هنا', ctaLink: '/', image: '', accent: '#3b82f6'
-    }])
+  const openCreateBanner = () => {
+    setEditingBanner(null)
+    setIsBannerModalOpen(true)
   }
-  const updateBanner = (id, field, value) => {
-    setBanners(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b))
+
+  const openEditBanner = (banner) => {
+    setEditingBanner(banner)
+    setIsBannerModalOpen(true)
   }
-  const removeBanner = (id) => setBanners(prev => prev.filter(b => b.id !== id))
+
+  const handleSaveBanner = async (formData) => {
+    try {
+      const payload = new FormData()
+      payload.append('title', formData.title)
+      payload.append('subtitle', formData.subtitle)
+      payload.append('buttonText', formData.buttonText)
+      payload.append('buttonLink', formData.buttonLink)
+      payload.append('order', formData.order || 0)
+      payload.append('isActive', formData.isActive)
+
+      if (formData.imageFile) {
+        payload.append('image', formData.imageFile)
+      } else if (formData.imageUrl) {
+        payload.append('imageUrl', formData.imageUrl)
+      }
+
+      if (editingBanner) {
+        await bannerApi.updateBanner(editingBanner._id, payload)
+        showToast('✅ تم تحديث البانر')
+      } else {
+        await bannerApi.createBanner(payload)
+        showToast('✅ تم إضافة البانر')
+      }
+      
+      setIsBannerModalOpen(false)
+      fetchBanners()
+    } catch (err) {
+      showToast(editingBanner ? '❌ فشل التحديث' : '❌ فشل الإضافة')
+    }
+  }
+
+  const toggleBannerStatus = async (id) => {
+    try {
+      await bannerApi.toggleBanner(id)
+      setBanners(prev => prev.map(b => b._id === id ? { ...b, isActive: !b.isActive } : b))
+      showToast('✅ تم تغيير حالة البانر')
+    } catch (err) {
+      showToast('❌ فشل تغيير الحالة')
+    }
+  }
+
+  const removeBanner = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا البانر؟')) return
+    try {
+      await bannerApi.deleteBanner(id)
+      setBanners(prev => prev.filter(b => b._id !== id))
+      showToast('✅ تم حذف البانر')
+    } catch (err) {
+      showToast('❌ فشل حذف البانر')
+    }
+  }
 
   // Brand Actions
   const addBrand = () => {
@@ -139,34 +192,54 @@ export default function PageSettings() {
             <div className="admin-stack">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>اللافتات (Banners)</h3>
-                <button onClick={addBanner} className="admin-btn admin-btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
+                <button onClick={openCreateBanner} className="admin-btn admin-btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
                   + إضافة لافتة
                 </button>
               </div>
 
-              {banners.length === 0 && <p className="admin-muted text-center" style={{ padding: 40 }}>لا توجد لافتات.</p>}
+               {banners.length === 0 && !loading && <p className="admin-muted text-center" style={{ padding: 40 }}>لا توجد لافتات مضافة حالياً.</p>}
+               {loading && <p className="admin-muted text-center" style={{ padding: 40 }}>جاري التحميل...</p>}
 
-              {banners.map((b, idx) => (
-                <div key={b.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, position: 'relative' }}>
-                  <button onClick={() => removeBanner(b.id)} style={{ position: 'absolute', top: 12, left: 12, background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                  <h4 style={{ margin: '0 0 16px 0', fontSize: 15, color: '#334155' }}>شريحة #{idx + 1}</h4>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <label className="admin-label"><span>العنوان (Title)</span><input className="admin-input" value={b.title} onChange={e => updateBanner(b.id, 'title', e.target.value)} /></label>
-                    <label className="admin-label"><span>الوصف (Subtitle)</span><input className="admin-input" value={b.subtitle} onChange={e => updateBanner(b.id, 'subtitle', e.target.value)} /></label>
-                    <label className="admin-label"><span>الشارة (Badge)</span><input className="admin-input" value={b.badge} onChange={e => updateBanner(b.id, 'badge', e.target.value)} /></label>
-                    <label className="admin-label"><span>رابط الصورة (Image URL)</span><input className="admin-input" value={b.image} onChange={e => updateBanner(b.id, 'image', e.target.value)} /></label>
-                    <label className="admin-label"><span>نص الزر (CTA)</span><input className="admin-input" value={b.cta} onChange={e => updateBanner(b.id, 'cta', e.target.value)} /></label>
-                    <label className="admin-label"><span>رابط الزر (Link)</span><input className="admin-input" value={b.ctaLink} onChange={e => updateBanner(b.id, 'ctaLink', e.target.value)} /></label>
-                    <label className="admin-label"><span>لون الخلفية (CSS)</span><input className="admin-input" value={b.bg} onChange={e => updateBanner(b.id, 'bg', e.target.value)} dir="ltr" /></label>
-                    <label className="admin-label"><span>اللون المميز (Accent)</span><input className="admin-input" type="color" value={b.accent} onChange={e => updateBanner(b.id, 'accent', e.target.value)} style={{ padding: 4, height: 42 }} /></label>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                {banners.map((b, idx) => (
+                  <div key={b._id} className="admin-card" style={{ padding: '16px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 6, zIndex: 2 }}>
+                       <button onClick={() => removeBanner(b._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>✕</button>
+                    </div>
+
+                    <div style={{ width: '100%', height: '140px', borderRadius: '10px', background: '#f1f5f9', marginBottom: '12px', overflow: 'hidden' }}>
+                      <img 
+                        src={b.imageUrl?.url || b.image} 
+                        alt={b.title} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={e => e.target.src = 'https://placehold.co/400x200?text=No+Image'}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '15px' }}>{b.title}</h4>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>ترتيب: {b.order}</p>
+                      </div>
+                      <span style={{ 
+                        fontSize: '10px', padding: '2px 8px', borderRadius: '99px', 
+                        background: b.isActive ? '#dcfce7' : '#f1f5f9', 
+                        color: b.isActive ? '#16a34a' : '#64748b',
+                        fontWeight: 800
+                      }}>
+                        {b.isActive ? 'نشط' : 'معطل'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                      <button onClick={() => openEditBanner(b)} className="admin-btn admin-btn-ghost" style={{ flex: 1, minHeight: '34px', fontSize: '12px' }}>تعديل</button>
+                      <button onClick={() => toggleBannerStatus(b._id)} className="admin-btn admin-btn-ghost" style={{ flex: 1, minHeight: '34px', fontSize: '12px' }}>
+                        {b.isActive ? 'تعطيل' : 'تفعيل'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-              
-              {banners.length > 0 && (
-                <button onClick={() => showToast('تم الحفظ مؤقتاً في المتصفح')} className="admin-btn admin-btn-primary" style={{ width: '100%' }}>حفظ التعديلات</button>
-              )}
+                ))}
+               </div>
             </div>
           )}
 
@@ -230,6 +303,13 @@ export default function PageSettings() {
 
         </div>
       </div>
+
+      <BannerFormModal 
+        isOpen={isBannerModalOpen}
+        onClose={() => setIsBannerModalOpen(false)}
+        initialData={editingBanner}
+        onSave={handleSaveBanner}
+      />
     </div>
   )
 }

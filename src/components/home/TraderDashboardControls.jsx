@@ -46,6 +46,14 @@ export default function TraderDashboardControls() {
             <p>تواصل مع عملائك فوراً</p>
           </div>
         </button>
+
+        <button className="trader-control-card" onClick={() => navigate('/trader/stats')}>
+          <div className="tcc-icon is-green">📊</div>
+          <div className="tcc-content">
+            <h4>إحصائياتي</h4>
+            <p>تقرير أداء مبيعاتك وطلباتك</p>
+          </div>
+        </button>
       </div>
     </section>
   )

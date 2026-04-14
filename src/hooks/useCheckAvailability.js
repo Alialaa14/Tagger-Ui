@@ -30,7 +30,7 @@ export default function useCheckAvailability() {
     setIsCheckingAvailability(true)
     setAvailabilityError('')
     try {
-      const { data } = await axios.get(`http://localhost:3000/api/products/${productId}/availability`, {
+      const { data } = await axios.get(`/api/products/${productId}/availability`, {
         withCredentials: true,
       })
       const normalized = normalizeAvailability(data)

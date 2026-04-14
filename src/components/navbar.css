@@ -5,19 +5,20 @@
 
 /* ── Root shell ─────────────────────────────────────────────── */
 .nb-root {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   background: #ffffff;
   border-bottom: 1px solid rgba(22, 163, 74, .1);
   box-shadow: 0 1px 12px rgba(22, 163, 74, .06);
 }
 
 .nb-inner {
-  max-width: 1260px;
-  margin: 0 auto;
-  padding: 0 20px;
-  height: 66px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -519,7 +520,8 @@
 }
 
 /* ── Mobile toggle ──────────────────────────────────────────── */
-.nb-mobile-toggle {
+.nb-mobile-toggle,
+.nb-dashboard-toggle {
   display: none;
   align-items: center;
   justify-content: center;
@@ -533,7 +535,8 @@
   transition: border-color 180ms, color 180ms;
 }
 
-.nb-mobile-toggle:hover {
+.nb-mobile-toggle:hover,
+.nb-dashboard-toggle:hover {
   border-color: #22c55e;
   color: #16a34a;
 }
@@ -576,7 +579,8 @@
     display: none;
   }
 
-  .nb-mobile-toggle {
+  .nb-mobile-toggle,
+  .nb-dashboard-toggle {
     display: flex;
   }
 

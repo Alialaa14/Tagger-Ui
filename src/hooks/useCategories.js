@@ -21,24 +21,24 @@ export default function useCategories() {
 
   useEffect(() => {
     let mounted = true
-    ;(async () => {
-      setIsLoading(true)
-      setError('')
-      try {
-        const { data } = await axios.get('http://localhost:3000/api/categories', { withCredentials: true })
-        const payload = data?.data || data?.categories || data
-        const next = Array.isArray(payload) ? payload.map(normalizeCategory) : []
-        if (!mounted) return
-        setCategories(next)
-      } catch (err) {
-        if (!mounted) return
-        const msg = err?.response?.data?.message || err?.message || 'تعذر تحميل الفئات حاليا.'
-        setError(msg)
-        setCategories(seedCategories.map(normalizeCategory))
-      } finally {
-        if (mounted) setIsLoading(false)
-      }
-    })()
+      ; (async () => {
+        setIsLoading(true)
+        setError('')
+        try {
+          const { data } = await axios.get('/api/categories', { withCredentials: true })
+          const payload = data?.data || data?.categories || data
+          const next = Array.isArray(payload) ? payload.map(normalizeCategory) : []
+          if (!mounted) return
+          setCategories(next)
+        } catch (err) {
+          if (!mounted) return
+          const msg = err?.response?.data?.message || err?.message || 'تعذر تحميل الفئات حاليا.'
+          setError(msg)
+          setCategories(seedCategories.map(normalizeCategory))
+        } finally {
+          if (mounted) setIsLoading(false)
+        }
+      })()
     return () => { mounted = false }
   }, [])
 

@@ -3,7 +3,7 @@ import axios from 'axios'
 import { connectSocket, disconnectSocket } from '../socket'
 
 const AuthContext = createContext(null)
-const API_BASE = 'http://localhost:3000/api/v1/auth'
+const API_BASE = '/api/v1/auth'
 
 function normalizeUserPayload(payload) {
   if (!payload) return null

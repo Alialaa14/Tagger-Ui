@@ -11,7 +11,7 @@ export default function CategoryCard({ category }) {
     if (prefetchedRef.current) return
     prefetchedRef.current = true
     try {
-      await axios.get(`http://localhost:3000/api/products?category=${encodeURIComponent(category.id)}`, {
+      await axios.get(`/api/v1/product?category=${encodeURIComponent(category._id || category.id)}`, {
         withCredentials: true,
       })
     } catch (_) {
@@ -25,8 +25,8 @@ export default function CategoryCard({ category }) {
       tabIndex={0}
       onMouseEnter={onEnter}
       onFocus={onEnter}
-      onClick={() => navigate(`/categories/${encodeURIComponent(category.id)}`)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/categories/${encodeURIComponent(category.id)}`) }}
+      onClick={() => navigate(`/products?category=${encodeURIComponent(category._id || category.id)}`)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/products?category=${encodeURIComponent(category._id || category.id)}`) }}
       role="button"
       aria-label={`استكشف فئة ${category.name}`}
       dir="rtl"

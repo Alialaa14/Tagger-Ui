@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   addProductDiscountRow,
@@ -16,6 +16,7 @@ function buildSubmitPayload(formState, mode, product) {
     description: formState.description.trim(),
     price: Number(formState.price),
     category: formState.category,
+    company: formState.company,
     discount: formState.discounts
       .filter((item) => item.quantity !== '' && item.discountValue !== '')
       .map((item) => ({
@@ -31,6 +32,7 @@ export default function ProductForm({
   mode = 'create',
   product = null,
   categories = [],
+  companies = [],
   onSubmit,
   onCancel,
 }) {
@@ -38,7 +40,7 @@ export default function ProductForm({
   const { form, isSubmitting } = useSelector((state) => state.productAdmin)
 
   const canSubmit = useMemo(() => {
-    return Boolean(form.name && form.description && form.price && form.category)
+    return Boolean(form.name && form.description && form.price && form.category && form.company)
   }, [form])
 
   useEffect(() => {
@@ -133,17 +135,31 @@ export default function ProductForm({
         />
       </label>
 
-      <label className="admin-label">
-        <span>الفئة</span>
-        <select className="admin-input" value={form.category} onChange={handleFieldChange('category')}>
-          <option value="">اختر الفئة</option>
-          {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="product-form-grid">
+        <label className="admin-label">
+          <span>الفئة</span>
+          <select className="admin-input" value={form.category} onChange={handleFieldChange('category')}>
+            <option value="">اختر الفئة</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="admin-label">
+          <span>الشركة المصنعة (Brand)</span>
+          <select className="admin-input" value={form.company} onChange={handleFieldChange('company')}>
+            <option value="">اختر الشركة</option>
+            {companies.map((comp) => (
+              <option key={comp._id} value={comp._id}>
+                {comp.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       <div className="admin-label">
         <span>الخصومات حسب الكمية</span>

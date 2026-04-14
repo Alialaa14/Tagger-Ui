@@ -69,16 +69,9 @@ export async function updateOrderById(orderId, updates) {
   return pickOrder(payload) || payload;
 }
 
-export async function forwardOrderToTrader(orderId, payload) {
-  if (!orderId) throw new Error("orderId is required");
-  const response = await requestWithFallback(
-    [
-      () => axios.patch(`${ORDER_BASE}/${orderId}/forward`, payload, withCreds()),
-      () => axios.patch(`${ORDER_BASE}/${orderId}/assign`, payload, withCreds()),
-      () => axios.patch(`${ORDER_BASE}/${orderId}`, { status: "forwarded", ...payload }, withCreds()),
-    ],
-    "No order forward endpoint responded."
-  );
+export async function forwardOrderToTrader(orderId, traderId) {
+  if (!orderId || !traderId) throw new Error("orderId and traderId are required");
+  const response = await axios.post(`${ORDER_BASE}/forward`, { orderId, traderId }, withCreds());
   const data = unwrapPayload(response);
   return pickOrder(data) || data;
 }

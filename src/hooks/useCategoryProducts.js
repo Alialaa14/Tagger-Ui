@@ -28,45 +28,45 @@ export default function useCategoryProducts(categoryId, filters) {
     if (!categoryId) return
     let mounted = true
 
-    ;(async () => {
-      const firstLoad = products.length === 0
-      if (firstLoad) setIsLoading(true)
-      else setIsFiltering(true)
-      setError('')
+      ; (async () => {
+        const firstLoad = products.length === 0
+        if (firstLoad) setIsLoading(true)
+        else setIsFiltering(true)
+        setError('')
 
-      const params = {
-        category: categoryId,
-        search: debouncedSearch || '',
-        minPrice: filters.minPrice || '',
-        maxPrice: filters.maxPrice || '',
-        sort: filters.sortBy || '',
-      }
+        const params = {
+          category: categoryId,
+          search: debouncedSearch || '',
+          minPrice: filters.minPrice || '',
+          maxPrice: filters.maxPrice || '',
+          sort: filters.sortBy || '',
+        }
 
-      try {
-        const { data } = await axios.get('http://localhost:3000/api/products', {
-          params,
-          withCredentials: true,
-        })
-        const payload = data?.data || data?.products || data
-        const normalized = Array.isArray(payload) ? payload.map(normalizeProduct) : []
-        if (!mounted) return
-        setProducts(normalized)
-      } catch (err) {
-        if (!mounted) return
-        const fallback = seedProducts
-          .filter((p) => p.category === categoryId)
-          .map(normalizeProduct)
-        setProducts(fallback)
-        setError(err?.response?.data?.message || err?.message || 'تعذر تحميل منتجات الفئة.')
-      } finally {
-        if (!mounted) return
-        setIsLoading(false)
-        setIsFiltering(false)
-      }
-    })()
+        try {
+          const { data } = await axios.get('/api/products', {
+            params,
+            withCredentials: true,
+          })
+          const payload = data?.data || data?.products || data
+          const normalized = Array.isArray(payload) ? payload.map(normalizeProduct) : []
+          if (!mounted) return
+          setProducts(normalized)
+        } catch (err) {
+          if (!mounted) return
+          const fallback = seedProducts
+            .filter((p) => p.category === categoryId)
+            .map(normalizeProduct)
+          setProducts(fallback)
+          setError(err?.response?.data?.message || err?.message || 'تعذر تحميل منتجات الفئة.')
+        } finally {
+          if (!mounted) return
+          setIsLoading(false)
+          setIsFiltering(false)
+        }
+      })()
 
     return () => { mounted = false }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId, debouncedSearch, filters.minPrice, filters.maxPrice, filters.sortBy])
 
   const displayProducts = useMemo(() => {

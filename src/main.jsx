@@ -9,6 +9,7 @@ import { CartProvider } from './context/CartContext'
 import { AuthProvider } from './context/AuthContext'
 import { CategoriesProvider } from './context/CategoriesContext'
 import store from './store/store'
+import { UIProvider } from './context/UIContext'
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -16,9 +17,11 @@ createRoot(document.getElementById('root')).render(
       <Provider store={store}>
         <AuthProvider>
           <CategoriesProvider>
-            <CartProvider>
-              <App />
-            </CartProvider>
+            <UIProvider>
+              <CartProvider>
+                <App />
+              </CartProvider>
+            </UIProvider>
           </CategoriesProvider>
         </AuthProvider>
       </Provider>

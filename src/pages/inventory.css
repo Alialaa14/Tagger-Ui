@@ -289,3 +289,97 @@
 
 .inventory-empty h2 { color: #1e293b; margin-bottom: 8px; }
 .inventory-empty p { color: #64748b; margin-bottom: 24px; }
+/* ================================================================
+   INVENTORY QR ADDITIONS  — append these to your inventory.css
+   ================================================================ */
+
+/* ── QR row inside inventory card ──────────────────────────── */
+
+.inventory-qr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 0 0 4px;
+  background: #f8fffe;
+  border: 1.5px solid rgba(22, 163, 74, 0.10);
+  border-radius: 14px;
+}
+
+/* Thumbnail + hover zoom overlay */
+.inventory-qr-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(22, 163, 74, 0.15);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.inventory-qr-thumb:hover {
+  border-color: #16a34a;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.22);
+}
+
+.inventory-qr-thumb:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+.inventory-qr-canvas {
+  display: block;
+  width: 64px !important;
+  height: 64px !important;
+}
+
+/* Green overlay shown on hover */
+.inventory-qr-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(22, 163, 74, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 180ms ease;
+  border-radius: 9px;
+}
+
+.inventory-qr-thumb:hover .inventory-qr-overlay {
+  opacity: 1;
+}
+
+/* Label + expand button */
+.inventory-qr-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inventory-qr-label span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inventory-qr-expand-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #16a34a;
+  cursor: pointer;
+  text-align: right;
+  transition: color 150ms ease;
+}
+
+.inventory-qr-expand-btn:hover { color: #15803d; text-decoration: underline; }
+

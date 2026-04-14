@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 const initialState = {
   name: '',
@@ -115,26 +115,26 @@ export default function CategoryForm({
     <form className="category-form" onSubmit={handleSubmit}>
       <div className="space-y-6">
         <label className="admin-label">
-          <span>اسم الفئة</span>
+          <span>??? ?????</span>
           <input
             type="text"
             className="admin-input"
             value={form.name}
             onChange={handleInput('name')}
             required
-            placeholder="مثال: إلكترونيات"
+            placeholder="????: ??????????"
           />
         </label>
 
         <label className="admin-label">
-          <span>وصف الفئة</span>
+          <span>??? ?????</span>
           <textarea
             className="admin-input"
             rows="4"
             maxLength={50}
             value={form.description}
             onChange={handleInput('description')}
-            placeholder="وصف قصير للفئة"
+            placeholder="??? ???? ?????"
           />
           <small className="admin-muted">
             {form.description.length}/50
@@ -142,12 +142,12 @@ export default function CategoryForm({
         </label>
 
         <label className="admin-label">
-          <span>صورة الفئة</span>
+          <span>???? ?????</span>
           <input type="file" className="admin-input" accept="image/*" onChange={handleFileChange} />
       
           {form.preview ? (
             <div className="category-image-preview-wrap">
-              <img src={form.preview} alt="معاينة الفئة" className="category-image-preview" />
+              <img src={form.preview} alt="?????? ?????" className="category-image-preview" />
             </div>
           ) : null}
         </label>
@@ -159,7 +159,7 @@ export default function CategoryForm({
           className="admin-btn admin-btn-primary"
           disabled={!canSubmit || isSubmitting}
         >
-          {isSubmitting ? 'جاري الحفظ...' : mode === 'edit' ? 'تحديث الفئة' : 'إنشاء الفئة'}
+          {isSubmitting ? '???? ?????...' : mode === 'edit' ? '????? ?????' : '????? ?????'}
         </button>
 
         <button
@@ -168,7 +168,7 @@ export default function CategoryForm({
           onClick={onCancel}
           disabled={isSubmitting}
         >
-          إلغاء
+          ?????
         </button>
       </div>
     </form>
