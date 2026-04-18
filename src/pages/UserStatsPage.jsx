@@ -9,7 +9,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import BackNavigator from '../components/common/BackNavigator'
 import toast from '../utils/toast'
-import './orders.css'
+import './Orders.css'
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 const fmtMoney = (v) => new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(v || 0)

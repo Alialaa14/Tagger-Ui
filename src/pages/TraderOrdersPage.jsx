@@ -10,7 +10,7 @@ import toast from '../utils/toast'
 import BackNavigator from '../components/common/BackNavigator'
 import notificationSound from '../assets/tritone.mp3'
 import useCountdown from '../hooks/useCountdown'
-import './orders.css'
+import './Orders.css'
 
 // ── Status config ─────────────────────────────────────────────
 const STATUS_MAP = {

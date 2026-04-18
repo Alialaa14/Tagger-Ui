@@ -2,7 +2,7 @@ import React from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import BackNavigator from '../components/common/BackNavigator'
-import './orders.css'
+import './Orders.css'
 
 export default function TraderChatPage() {
   return (

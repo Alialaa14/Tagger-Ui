@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import NotificationsPanel from '../components/notifications/NotificationsPanel'
 import socket from '../socket'
 import BackNavigator from '../components/common/BackNavigator'
-import './orders.css'
+import './Orders.css'
 
 // ── Status config ─────────────────────────────────────────────
 const STATUS_MAP = {
